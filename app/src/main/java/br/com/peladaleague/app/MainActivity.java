@@ -20,6 +20,7 @@ public class MainActivity extends Activity {
     final Map<String,View> tutorialTargets=new HashMap<>();
     Onboarding onboarding;
     final OnlineEventsScreen.State onlineState=new OnlineEventsScreen.State();
+    final OnlineLiveScreen.State liveState=new OnlineLiveScreen.State();
     <T extends View> T mark(String name,T v){tutorialTargets.put(name,v);return v;}
     String role="Organizador"; int shirtNumber=0;
     @Override public void onCreate(Bundle state){
@@ -93,6 +94,7 @@ public class MainActivity extends Activity {
             case "finance":new FinanceScreen(this).render();break;
             case "account":new AccountScreen(this).render();break;
             case "online":new OnlineEventsScreen(this).render();break;
+            case "live":new OnlineLiveScreen(this).render();break;
             default:route="home";new HomeScreen(this).render();
         }
         if(Arrays.asList("home","groups","league","profile").contains(route))bottom();
