@@ -16,6 +16,7 @@ jobs:
         run: |
           set -euo pipefail
           cat payload/part*.txt | base64 --decode | tar -xJ
+          sh repair-gradle.sh
           python3 -m pip install --quiet pillow
           python3 make_assets.py
           rm -rf payload .github/workflows/bootstrap.yml
@@ -34,10 +35,10 @@ jobs:
           java-version: '17'
       - uses: android-actions/setup-android@v3
       - name: Install Android SDK
-        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+        run: sdkmanager "platforms;android-35" "build-tools;36.0.0"
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.13'
+          gradle-version: '9.6.1'
       - name: Run core tests
         run: ./scripts/test-core.sh
       - name: Build debug APK
