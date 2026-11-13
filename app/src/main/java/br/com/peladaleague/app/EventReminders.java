@@ -133,17 +133,3 @@ final class EventReminders {
         if(mgr!=null)mgr.notify(id.hashCode()*3+lead,notification.build());
     }
 }
-final class EventReminderReceiver extends BroadcastReceiver {
-    @Override public void onReceive(Context context,Intent intent){
-        if("br.com.peladaleague.REMINDER".equals(intent.getAction()))
-            EventReminders.notify(context,intent);
-    }
-}
-/** Explicitly exported only for system reboot broadcasts, never for private reminder actions. */
-final class EventReminderBootReceiver extends BroadcastReceiver {
-    @Override public void onReceive(Context context,Intent intent){
-        if(Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())||
-           Intent.ACTION_MY_PACKAGE_REPLACED.equals(intent.getAction()))
-            EventReminders.restore(context);
-    }
-}
