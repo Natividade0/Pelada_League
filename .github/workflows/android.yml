@@ -1,11 +1,13 @@
-name: Android 0.4 · build and device tests
+name: Pelada League · Android build and device tests
 on:
   push:
     branches: [main, 'redesign/**']
-  pull_request:
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: pelada-android-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   build:
     runs-on: ubuntu-latest
