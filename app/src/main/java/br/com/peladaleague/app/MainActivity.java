@@ -10,7 +10,7 @@ import java.util.concurrent.*;
 
 /** Android host: navigation, lifecycle and state. Screens and rules live separately. */
 public class MainActivity extends Activity {
-    DemoDb db; LinearLayout page; ScrollView scroll; LinearLayout shell;
+    DemoDb db; LocalFinance finance; LinearLayout page; ScrollView scroll; LinearLayout shell;
     String route="welcome"; long groupId=1,gameId=0,playerId=1;
     int groupTab,drawTab,matchTab,leagueTab,profileTab,teamCount=2;
     boolean balanced=true,drawBusy=false,revealTeams=false,highlightScore=false;
@@ -22,7 +22,7 @@ public class MainActivity extends Activity {
     <T extends View> T mark(String name,T v){tutorialTargets.put(name,v);return v;}
     String role="Organizador"; int shirtNumber=0;
     @Override public void onCreate(Bundle state){
-        super.onCreate(state);db=new DemoDb(this);onboarding=new Onboarding(this);
+        super.onCreate(state);db=new DemoDb(this);finance=new LocalFinance(this,db);onboarding=new Onboarding(this);
         android.content.SharedPreferences pref=getPreferences(0);
         groupId=pref.getLong("group",1);playerId=pref.getLong("player",1);shirtNumber=pref.getInt("shirt",0);role=pref.getString("role","Organizador");
         if(state!=null){groupId=state.getLong("group",groupId);gameId=state.getLong("game");route=state.getString("route","home");groupTab=state.getInt("groupTab");drawTab=state.getInt("drawTab");matchTab=state.getInt("matchTab");leagueTab=state.getInt("leagueTab");profileTab=state.getInt("profileTab");teamCount=state.getInt("teamCount",2);balanced=state.getBoolean("balanced",true);selectionFingerprint=state.getString("fingerprint","");long[] ids=state.getLongArray("selected");if(ids!=null)for(long id:ids)selected.add(id);ArrayList<String> h=state.getStringArrayList("history");if(h!=null)history.addAll(h);Bundle pos=state.getBundle("positions");if(pos!=null)for(String k:pos.keySet())positions.put(k,pos.getInt(k));}
@@ -32,7 +32,7 @@ public class MainActivity extends Activity {
         render(false);
     }
     @Override protected void onSaveInstanceState(Bundle out){rememberPosition();out.putString("route",route);out.putLong("group",groupId);out.putLong("game",gameId);out.putInt("groupTab",groupTab);out.putInt("drawTab",drawTab);out.putInt("matchTab",matchTab);out.putInt("leagueTab",leagueTab);out.putInt("profileTab",profileTab);out.putInt("teamCount",teamCount);out.putBoolean("balanced",balanced);out.putString("fingerprint",selectionFingerprint);out.putLongArray("selected",selected.stream().mapToLong(Long::longValue).toArray());out.putStringArrayList("history",new ArrayList<>(history));Bundle pos=new Bundle();for(Map.Entry<String,Integer> e:positions.entrySet())pos.putInt(e.getKey(),e.getValue());out.putBundle("positions",pos);super.onSaveInstanceState(out);}
-    @Override protected void onDestroy(){worker.shutdownNow();db.close();super.onDestroy();}
+    @Override protected void onDestroy(){worker.shutdownNow();finance.close();db.close();super.onDestroy();}
     void rememberPosition(){if(scroll!=null)positions.put(route+":"+groupId,scroll.getScrollY());}
     void open(String target){rememberPosition();if(!route.equals(target))history.push(route);route=target;render(true);}
     void tab(String target){rememberPosition();history.clear();route=target;render(true);}
@@ -58,6 +58,7 @@ public class MainActivity extends Activity {
             case "approve":new ApprovalScreen(this).render();break;
             case "league":new LeagueScreen(this).render();break;
             case "profile":new ProfileScreen(this).render();break;
+            case "finance":new FinanceScreen(this).render();break;
             default:route="home";new HomeScreen(this).render();
         }
         if(Arrays.asList("home","groups","league","profile").contains(route))bottom();
