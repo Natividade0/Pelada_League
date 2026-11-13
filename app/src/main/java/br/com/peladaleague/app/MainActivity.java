@@ -52,6 +52,18 @@ public class MainActivity extends Activity {
         super.onNewIntent(intent);setIntent(intent);acceptInvite(intent);render(false);
     }
     @Override protected void onSaveInstanceState(Bundle out){rememberPosition();out.putString("route",route);out.putLong("group",groupId);out.putLong("game",gameId);out.putInt("groupTab",groupTab);out.putInt("drawTab",drawTab);out.putInt("matchTab",matchTab);out.putInt("leagueTab",leagueTab);out.putInt("profileTab",profileTab);out.putLong("leagueSeasonId",leagueSeasonId);out.putInt("teamCount",teamCount);out.putBoolean("balanced",balanced);out.putString("fingerprint",selectionFingerprint);out.putLongArray("selected",selected.stream().mapToLong(Long::longValue).toArray());out.putStringArrayList("history",new ArrayList<>(history));Bundle pos=new Bundle();for(Map.Entry<String,Integer> e:positions.entrySet())pos.putInt(e.getKey(),e.getValue());out.putBundle("positions",pos);super.onSaveInstanceState(out);}
+    @Override public void onRequestPermissionsResult(int requestCode,String[] permissions,int[] results){
+        super.onRequestPermissionsResult(requestCode,permissions,results);
+        if(requestCode==EventReminders.PERMISSION_REQUEST){
+            boolean granted=results.length>0&&results[0]==android.content.pm.PackageManager.PERMISSION_GRANTED;
+            if(granted){
+                EventReminders.setEnabled(this,true);
+                new OnlineEventsScreen(this).syncReminders();
+                toast("Lembretes ativados para seus eventos neste aparelho.");
+            }else toast("Notificações não autorizadas. Você pode ativá-las depois.");
+            if("online".equals(route))refresh();
+        }
+    }
     @Override protected void onDestroy(){worker.shutdownNow();matchClock.close();finance.close();db.close();super.onDestroy();}
     void rememberPosition(){if(scroll!=null)positions.put(route+":"+groupId,scroll.getScrollY());}
     void open(String target){rememberPosition();if(!route.equals(target))history.push(route);route=target;render(true);}
