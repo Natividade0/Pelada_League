@@ -11,12 +11,23 @@ adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
 adb shell am instrument -w -e class br.com.peladaleague.app.DatabaseTest br.com.peladaleague.app.test/android.test.InstrumentationTestRunner > qa-output/database-tests.txt
 cat qa-output/database-tests.txt
 grep -q 'OK (' qa-output/database-tests.txt
-adb shell am instrument -w -e class br.com.peladaleague.app.UiTest br.com.peladaleague.app.test/android.test.InstrumentationTestRunner > qa-output/ui-tests.txt
+adb logcat -c
+if adb shell am instrument -w -e class br.com.peladaleague.app.UiTest br.com.peladaleague.app.test/android.test.InstrumentationTestRunner > qa-output/ui-tests.txt; then
+  instrument_ok=1
+else
+  instrument_ok=0
+fi
+adb logcat -d -s AndroidRuntime:E > qa-output/crashes.txt || true
 cat qa-output/ui-tests.txt
+if [ "$instrument_ok" -ne 1 ] || ! grep -q 'OK (' qa-output/ui-tests.txt; then
+  echo "Android UI test failed; crash trace follows:"
+  cat qa-output/crashes.txt
+  exit 1
+fi
 adb exec-out run-as br.com.peladaleague.app tar -C files -cf - qa > qa-output/screenshots.tar
 mkdir -p qa-output/screenshots
 tar -xf qa-output/screenshots.tar -C qa-output/screenshots --strip-components=1
-grep -q 'OK (' qa-output/ui-tests.txt
 adb shell am force-stop br.com.peladaleague.app
 adb shell am start -W -n br.com.peladaleague.app/.MainActivity > qa-output/relaunch.txt
-adb logcat -d -s AndroidRuntime:E > qa-output/crashes.txt
+adb logcat -d -s AndroidRuntime:E > qa-output/crashes.txt || true
+if [ -s qa-output/crashes.txt ]; then cat qa-output/crashes.txt; exit 1; fi
