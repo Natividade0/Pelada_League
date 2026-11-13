@@ -8,9 +8,19 @@ adb shell wm density 320
 adb shell input keyevent 82
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
-adb shell am instrument -w -e class br.com.peladaleague.app.DatabaseTest br.com.peladaleague.app.test/android.test.InstrumentationTestRunner > qa-output/database-tests.txt
+adb logcat -c
+if adb shell am instrument -w -e class br.com.peladaleague.app.DatabaseTest br.com.peladaleague.app.test/android.test.InstrumentationTestRunner > qa-output/database-tests.txt; then
+  :
+else
+  echo "Database instrument terminated with nonzero code."
+fi
 cat qa-output/database-tests.txt
-grep -q 'OK (' qa-output/database-tests.txt
+if ! grep -q 'OK (' qa-output/database-tests.txt; then
+  echo "Database instrumentation failure; Android crash log:"
+  adb logcat -d -s AndroidRuntime:E > qa-output/database-crashes.txt || true
+  cat qa-output/database-crashes.txt
+  exit 1
+fi
 adb shell am instrument -w -e class br.com.peladaleague.app.FinanceTest br.com.peladaleague.app.test/android.test.InstrumentationTestRunner > qa-output/finance-tests.txt
 cat qa-output/finance-tests.txt
 grep -q 'OK (' qa-output/finance-tests.txt
