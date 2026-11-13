@@ -53,4 +53,5 @@ XML
 XML
   cp app/src/main/res/drawable/crest.xml app/src/main/res/mipmap-hdpi/ic_launcher.xml
 fi
+sh repair-gradle.sh
 echo "Pronto. Abra a pasta clonada no Code on the Go e sincronize o Gradle."
