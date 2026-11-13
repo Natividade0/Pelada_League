@@ -37,10 +37,12 @@ final class EventReminders {
     static void setEnabled(Context c,boolean enabled){
         SharedPreferences pref=c.getSharedPreferences(PREF,0);
         pref.edit().putBoolean("enabled",enabled).apply();
-        if(!enabled){
-            for(JSONObject e:stored(c))cancel(c,e.optString("id"));
-            pref.edit().remove("events").apply();
-        }
+        if(!enabled)clear(c);
+    }
+    /** Clears stale alarms without revoking the user's notification preference. */
+    static void clear(Context c){
+        for(JSONObject e:stored(c))cancel(c,e.optString("id"));
+        c.getSharedPreferences(PREF,0).edit().remove("events").apply();
     }
     static long millis(String iso){
         try{return OffsetDateTime.parse(iso).toInstant().toEpochMilli();}
