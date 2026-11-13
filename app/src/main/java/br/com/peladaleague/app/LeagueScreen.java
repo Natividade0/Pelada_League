@@ -152,12 +152,9 @@ final class LeagueScreen extends Screen {
         sub("A criação de uma nova temporada arquiva o período anterior sem apagar partidas, gols ou premiações.");
     }
     private void shareAwards(DemoDb.Season season,List<DemoDb.Award> awards){
-        StringBuilder out=new StringBuilder("PELADA LEAGUE · "+db.group(a.groupId)[0]+"
-TEMPORADA: "+season.name+"
-");
+        StringBuilder out=new StringBuilder("PELADA LEAGUE · "+db.group(a.groupId)[0]+"\nTEMPORADA: "+season.name+"\n");
         for(DemoDb.Award award:awards)out.append(award.category).append(": ")
-            .append(award.name).append(" (").append(award.value).append(")
-");
+            .append(award.name).append(" (").append(award.value).append(")\n");
         out.append("Resultados aprovados localmente.");
         share(out.toString());
     }
