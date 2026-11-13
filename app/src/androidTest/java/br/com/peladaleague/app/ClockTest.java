@@ -12,6 +12,12 @@ public final class ClockTest extends InstrumentationTestCase {
             @Override public java.io.File getDatabasePath(String name){
                 return super.getDatabasePath("qa_clock_"+name);
             }
+            @Override public android.database.sqlite.SQLiteDatabase openOrCreateDatabase(String name,int mode,android.database.sqlite.SQLiteDatabase.CursorFactory factory){
+                return super.openOrCreateDatabase("qa_clock_"+name,mode,factory);
+            }
+            @Override public android.database.sqlite.SQLiteDatabase openOrCreateDatabase(String name,int mode,android.database.sqlite.SQLiteDatabase.CursorFactory factory,android.database.DatabaseErrorHandler handler){
+                return super.openOrCreateDatabase("qa_clock_"+name,mode,factory,handler);
+            }
         };
         base.deleteDatabase("qa_clock_pelada_match_clock.db");
         LocalMatchClock c=new LocalMatchClock(sandbox);
