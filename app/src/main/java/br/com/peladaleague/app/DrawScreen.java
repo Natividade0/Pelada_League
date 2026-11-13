@@ -32,13 +32,14 @@ final class DrawScreen extends Screen {
         int viewport=Math.max(255,Math.round(a.getResources().getDisplayMetrics().widthPixels/
             a.getResources().getDisplayMetrics().density)-48);
         for(int teamIndex=0;teamIndex<saved.size();teamIndex++){
-            String name=a.teamName(teamIndex);
-            PitchView pitch=new PitchView(a,name,a.teamColor(name),saved.get(teamIndex));
+            final int index=teamIndex;
+            String name=a.teamName(index);
+            PitchView pitch=new PitchView(a,name,a.teamColor(name),saved.get(index));
             LinearLayout.LayoutParams pitchParams=Ui.lp(a,viewport,-2);
             pitchParams.rightMargin=Ui.dp(a,12);
             fields.addView(pitch,pitchParams);
             Ui.tappable(pitch,()->new AlertDialog.Builder(a).setTitle(name)
-                .setItems(saved.get(teamIndex).stream().map(p->p.name+" · "+p.pos).toArray(String[]::new),(d,i)->{})
+                .setItems(saved.get(index).stream().map(p->p.name+" · "+p.pos).toArray(String[]::new),(d,i)->{})
                 .setPositiveButton("Fechar",null).show());
         }
         pitchScroller.addView(fields,new HorizontalScrollView.LayoutParams(-2,-2));
