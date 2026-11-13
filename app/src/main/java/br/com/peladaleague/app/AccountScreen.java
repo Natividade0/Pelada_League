@@ -50,7 +50,7 @@ final class AccountScreen extends Screen {
         Ui.space(page,10);
         button("Entrar na minha conta",true,()->{
             a.auth.signIn(email.getText().toString(),pass.getText().toString(),(ok,msg)->{
-                a.toast(msg);if(ok)a.refresh();
+                a.toast(msg);if(ok){if(a.auth.loggedIn()&&!a.onlineState.code.isEmpty())a.tab("online");else a.refresh();}
             });
         });
         TextView recovery=Ui.chip(a,"Esqueci minha senha",false,()->a.auth.recover(email.getText().toString(),(ok,msg)->a.toast(msg)));
@@ -83,7 +83,7 @@ final class AccountScreen extends Screen {
             d.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
             a.auth.signUp(n,pos,mail,pass,(ok,msg)->{
                 a.toast(msg);
-                if(ok){d.dismiss();a.refresh();}
+                if(ok){d.dismiss();if(a.auth.loggedIn()&&!a.onlineState.code.isEmpty())a.tab("online");else a.refresh();}
                 else d.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
             });
         }));
