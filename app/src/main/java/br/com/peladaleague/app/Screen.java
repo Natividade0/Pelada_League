@@ -23,7 +23,35 @@ abstract class Screen {
     void pair(LinearLayout parent,View left,View right){LinearLayout row=Ui.row(a);row.setGravity(Gravity.TOP);LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(0,-2,1);p.rightMargin=Ui.dp(a,5);row.addView(left,p);LinearLayout.LayoutParams q=new LinearLayout.LayoutParams(0,-2,1);q.leftMargin=Ui.dp(a,5);row.addView(right,q);parent.addView(row);}
     void line(LinearLayout parent,String icon,String label,String value){LinearLayout row=Ui.row(a);row.setMinimumHeight(Ui.dp(a,30));row.addView(new Ui.Icon(a,icon,Ui.GOLD),Ui.lp(a,20,20));TextView l=text(label,13,Ui.WHITE,false);LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(0,-2,1);p.leftMargin=Ui.dp(a,7);row.addView(l,p);if(value!=null)row.addView(text(value,13,Ui.WHITE,true));parent.addView(row);}
     void empty(String title,String message,String action,Runnable callback){LinearLayout c=card();c.addView(text(title,16,Ui.WHITE,true));Ui.put(c,text(message,13,Ui.MUTED,false),8);if(action!=null)Ui.put(c,Ui.button(a,action,true,callback),12);add(c);}
-    FrameLayout stadium(LinearLayout content,int minimum,boolean dark){FrameLayout frame=new FrameLayout(a);frame.setMinimumHeight(Ui.dp(a,minimum));frame.setBackground(Ui.round(a,Ui.SURFACE,15,Ui.BORDER));frame.setClipToOutline(true);ImageView image=Ui.img(a,R.drawable.stadium_night);image.setScaleType(ImageView.ScaleType.CENTER_CROP);frame.addView(image,new FrameLayout.LayoutParams(-1,-1));View dim=new View(a);dim.setBackground(new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,new int[]{dark?0xF207090B:0xDF07090B,0x9907090B,0x2207090B}));frame.addView(dim,new FrameLayout.LayoutParams(-1,-1));content.setPadding(Ui.dp(a,14),Ui.dp(a,13),Ui.dp(a,14),Ui.dp(a,13));frame.addView(content,new FrameLayout.LayoutParams(-1,-2,Gravity.CENTER_VERTICAL));return frame;}
+    /** Keep stadium photos from expanding wrap-content banners to the bitmap's intrinsic height. */
+    FrameLayout stadium(LinearLayout content,int minimum,boolean dark){
+        FrameLayout frame=new FrameLayout(a){
+            @Override protected void onMeasure(int widthMeasureSpec,int heightMeasureSpec){
+                int width=View.MeasureSpec.getSize(widthMeasureSpec);
+                int contentWidth=Math.max(1,width-getPaddingLeft()-getPaddingRight());
+                content.measure(View.MeasureSpec.makeMeasureSpec(contentWidth,View.MeasureSpec.EXACTLY),
+                                View.MeasureSpec.makeMeasureSpec(0,View.MeasureSpec.UNSPECIFIED));
+                int height=Math.max(Ui.dp(a,minimum),content.getMeasuredHeight()+Ui.dp(a,12));
+                int mode=View.MeasureSpec.getMode(heightMeasureSpec);
+                if(mode==View.MeasureSpec.EXACTLY)height=View.MeasureSpec.getSize(heightMeasureSpec);
+                else if(mode==View.MeasureSpec.AT_MOST)height=Math.min(height,View.MeasureSpec.getSize(heightMeasureSpec));
+                super.onMeasure(widthMeasureSpec,View.MeasureSpec.makeMeasureSpec(height,View.MeasureSpec.EXACTLY));
+            }
+        };
+        frame.setMinimumHeight(Ui.dp(a,minimum));
+        frame.setBackground(Ui.round(a,Ui.SURFACE,15,Ui.BORDER));
+        frame.setClipToOutline(true);
+        ImageView image=Ui.img(a,R.drawable.stadium_night);
+        image.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        frame.addView(image,new FrameLayout.LayoutParams(-1,-1));
+        View dim=new View(a);
+        dim.setBackground(new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
+            new int[]{dark?0xF207090B:0xDF07090B,0x9907090B,0x2207090B}));
+        frame.addView(dim,new FrameLayout.LayoutParams(-1,-1));
+        content.setPadding(Ui.dp(a,14),Ui.dp(a,13),Ui.dp(a,14),Ui.dp(a,13));
+        frame.addView(content,new FrameLayout.LayoutParams(-1,-2,Gravity.CENTER_VERTICAL));
+        return frame;
+    }
     LinearLayout score(DemoDb.Game m){LinearLayout c=card(),row=Ui.row(a);for(int side=0;side<3;side++){if(side==1){TextView t=text(db.goals(m.id,0)+" × "+db.goals(m.id,1),32,Ui.WHITE,true);t.setGravity(Gravity.CENTER);row.addView(t,new LinearLayout.LayoutParams(0,-2,1));if(a.highlightScore)Motion.score(t);}else{String name=side==0?m.a:m.b;LinearLayout team=Ui.col(a);team.setGravity(Gravity.CENTER);team.addView(new SportArt(a,"shirt",a.teamColor(name)),Ui.lp(a,46,48));TextView label=text(name,12,Ui.WHITE,true);label.setGravity(Gravity.CENTER);Ui.put(team,label,4);row.addView(team,new LinearLayout.LayoutParams(0,-2,1));}}c.addView(row);a.highlightScore=false;return c;}
     String gameStatus(DemoDb.Game m){return m.status.equals("DRAFT")?"Em edição":m.status.equals("PENDING")?"Aguardando aprovação":"Validada · local";}
     void gameRow(LinearLayout parent,DemoDb.Game m){LinearLayout r=Ui.row(a);r.setMinimumHeight(Ui.dp(a,62));r.addView(new SportArt(a,"shirt",a.teamColor(m.a)),Ui.lp(a,30,34));LinearLayout name=Ui.col(a);name.setPadding(Ui.dp(a,9),0,Ui.dp(a,6),0);name.addView(text(m.a+" × "+m.b,12,Ui.WHITE,true));Ui.put(name,text(gameStatus(m),11,Ui.MUTED,false),4);r.addView(name,new LinearLayout.LayoutParams(0,-2,1));r.addView(text(db.goals(m.id,0)+" : "+db.goals(m.id,1),18,Ui.GOLD,true));Ui.tappable(r,()->a.openGame(m));parent.addView(r);}
