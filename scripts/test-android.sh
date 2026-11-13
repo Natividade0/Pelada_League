@@ -14,6 +14,9 @@ grep -q 'OK (' qa-output/database-tests.txt
 adb shell am instrument -w -e class br.com.peladaleague.app.FinanceTest br.com.peladaleague.app.test/android.test.InstrumentationTestRunner > qa-output/finance-tests.txt
 cat qa-output/finance-tests.txt
 grep -q 'OK (' qa-output/finance-tests.txt
+adb shell am instrument -w -e class br.com.peladaleague.app.ClockTest br.com.peladaleague.app.test/android.test.InstrumentationTestRunner > qa-output/clock-tests.txt
+cat qa-output/clock-tests.txt
+grep -q 'OK (' qa-output/clock-tests.txt
 adb logcat -c
 if adb shell am instrument -w -e class br.com.peladaleague.app.UiTest br.com.peladaleague.app.test/android.test.InstrumentationTestRunner > qa-output/ui-tests.txt; then
   instrument_ok=1
