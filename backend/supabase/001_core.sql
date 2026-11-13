@@ -338,6 +338,32 @@ begin
   return true;
 end $$;
 
+-- Only the organizer/treasurer can read a complete financial participant list.
+create or replace function public.event_finance(p_event uuid) returns jsonb
+language plpgsql security definer set search_path=public, pg_temp
+as $
+declare actor uuid:=auth.uid(); ev public.events%rowtype; members jsonb;
+begin
+  select * into ev from public.events where id=p_event;
+  if not found then raise exception 'Evento não encontrado.';end if;
+  if actor is null or not exists(select 1 from public.group_members
+    where group_id=ev.group_id and user_id=actor and role in ('ORGANIZER','TREASURER'))
+    then raise exception 'Sem permissão para consultar os pagamentos.';end if;
+  select coalesce(jsonb_agg(jsonb_build_object(
+    'user_id',a.user_id,'name',p.display_name,'position',a.position,
+    'due_cents',case when coalesce(x.override,ev.goalkeeper_exempt and a.position='GOL')
+      then 0 else ev.fee_cents end,
+    'paid_cents',coalesce(pay.paid_cents,0)
+  ) order by p.display_name),'[]'::jsonb) into members
+  from public.event_attendance a
+  join public.profiles p on p.id=a.user_id
+  left join public.event_exemptions x on x.event_id=a.event_id and x.user_id=a.user_id
+  left join public.event_payments pay on pay.event_id=a.event_id and pay.user_id=a.user_id
+  where a.event_id=p_event and a.status='CONFIRMED';
+  return jsonb_build_object('event_id',ev.id,'fee_cents',ev.fee_cents,
+      'field_cost_cents',ev.field_cost_cents,'players',members);
+end $;
+
 revoke all on function public.is_group_owner(uuid) from PUBLIC;
 revoke all on function public.is_event_owner(uuid) from PUBLIC;
 revoke all on function public.is_event_attendee(uuid) from PUBLIC;
@@ -351,6 +377,7 @@ revoke all on function public.event_preview(text) from PUBLIC;
 revoke all on function public.event_respond(text,boolean,text) from PUBLIC;
 revoke all on function public.mark_event_payment(uuid,uuid,integer,text) from PUBLIC;
 revoke all on function public.set_event_exemption(uuid,uuid,boolean) from PUBLIC;
+revoke all on function public.event_finance(uuid) from PUBLIC;
 
 grant execute on function public.create_group(text) to authenticated;
 grant execute on function public.create_event(uuid,text,text,timestamptz,integer,integer,integer,boolean,text) to authenticated;
@@ -358,4 +385,5 @@ grant execute on function public.event_preview(text) to authenticated;
 grant execute on function public.event_respond(text,boolean,text) to authenticated;
 grant execute on function public.mark_event_payment(uuid,uuid,integer,text) to authenticated;
 grant execute on function public.set_event_exemption(uuid,uuid,boolean) to authenticated;
+grant execute on function public.event_finance(uuid) to authenticated;
 commit;
