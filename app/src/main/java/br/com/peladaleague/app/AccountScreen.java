@@ -69,9 +69,9 @@ final class AccountScreen extends Screen {
         email.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
         EditText password=input(form,"Senha (mínimo de 8 caracteres)",true);
         Ui.put(form,text("Posição principal",12,Ui.WHITE,true),14);
-        final String[] positions={"GOL","ZAG","MEI","ATA","LIN"};
+        final String[] positions={"","GOL","ZAG","MEI","ATA","LIN"};
         Spinner position=new Spinner(a);
-        String[] choices={"Goleiro","Zagueiro","Meio-campo","Atacante","Jogador de linha"};
+        String[] choices={"Selecione sua posição","Goleiro","Zagueiro","Meio-campo","Atacante","Jogador de linha"};
         position.setAdapter(new ArrayAdapter<>(a,android.R.layout.simple_spinner_dropdown_item,choices));
         Ui.put(form,position,6);
         Ui.put(form,text("Você poderá mudar sua função em cada evento. O goleiro pode ser isento de pagamento quando o organizador habilitar essa opção.",11,Ui.MUTED,false),12);
@@ -80,6 +80,7 @@ final class AccountScreen extends Screen {
         d.setOnShowListener(v->d.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(btn->{
             String n=name.getText().toString(),mail=email.getText().toString(),pass=password.getText().toString();
             String pos=positions[position.getSelectedItemPosition()];
+            if(pos.isEmpty()){a.toast("Escolha sua posição principal.");return;}
             d.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
             a.auth.signUp(n,pos,mail,pass,(ok,msg)->{
                 a.toast(msg);
@@ -98,7 +99,7 @@ final class AccountScreen extends Screen {
         LinearLayout form=Ui.col(a);
         form.setPadding(Ui.dp(a,18),Ui.dp(a,8),Ui.dp(a,18),Ui.dp(a,12));
         EditText name=input(form,"Nome do jogador",false);
-        String[] codes={"GOL","ZAG","MEI","ATA","LIN"},labels={"Goleiro","Zagueiro","Meio-campo","Atacante","Jogador de linha"};
+        String[] codes={"","GOL","ZAG","MEI","ATA","LIN"},labels={"Selecione sua posição","Goleiro","Zagueiro","Meio-campo","Atacante","Jogador de linha"};
         Ui.put(form,text("Posição principal",12,Ui.WHITE,true),12);
         Spinner pos=new Spinner(a);pos.setAdapter(new ArrayAdapter<>(a,android.R.layout.simple_spinner_dropdown_item,labels));Ui.put(form,pos,6);
         ScrollView sc=new ScrollView(a);sc.addView(form);
@@ -110,6 +111,7 @@ final class AccountScreen extends Screen {
             if(uid.isEmpty()){a.toast("Identidade não carregada. Entre novamente.");return;}
             d.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
             final String selection=codes[pos.getSelectedItemPosition()];
+            if(selection.isEmpty()){a.toast("Selecione a posição para atualizar.");d.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);return;}
             a.auth.runOnline(()->{
                 JSONObject body=new JSONObject();
                 body.put("display_name",n);body.put("primary_position",selection);
