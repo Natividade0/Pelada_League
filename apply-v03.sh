@@ -20,7 +20,7 @@ done
 TEMP_FILE=".pelada-v03-package.tar.xz"
 trap 'rm -f "$TEMP_FILE"' EXIT
 cat payload/v03/part00.txt | tr -d '\r\n' | base64 -d > "$TEMP_FILE"
-EXPECTED='6269e6b0c5a41ca24722da90f733e23f4a139b804fe605b433fe0cbf31489482'
+EXPECTED='88ae61b0ad64a1c583aa84a68efa631c23663dca49f5541fab5ab5fd7e4da192'
 GOT="$(sha256sum "$TEMP_FILE" | cut -d ' ' -f1)"
 if [ "$GOT" != "$EXPECTED" ]; then
   echo "Falha de integridade. Nenhum arquivo alterado."
