@@ -2,7 +2,7 @@ name: Import Pelada League Android source
 on:
   push:
     paths:
-      - 'payload/part04.txt'
+      - 'payload/**'
   workflow_dispatch:
 permissions:
   contents: write
