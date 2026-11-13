@@ -80,6 +80,7 @@ final class OnlineEventsScreen extends Screen {
                 Ui.put(item,Ui.button(a,"Abrir evento",false,()->open(code)),10);
                 Ui.put(item,Ui.chip(a,"Compartilhar convite",false,()->shareInvitation(e.optString("title"),code)),7);
             }
+            Ui.put(item,Ui.chip(a,"Central de partida online",false,()->openLive(id)),7);
             Ui.put(item,Ui.chip(a,"Pagamentos online",false,()->onlineFinance(id)),7);
             add(item);gap(9);
         }
@@ -181,6 +182,7 @@ final class OnlineEventsScreen extends Screen {
         Ui.put(card,text("Contribuição por pessoa: "+FinanceScreen.money(ev.optInt("fee_cents"))+(ev.optBoolean("goalkeeper_exempt")?" · goleiros podem ser isentos":""),12,Ui.MUTED,false),5);
         Ui.put(card,text("Minha presença: "+ev.optString("my_status","PENDING"),12,Ui.GOLD,true),8);
         add(card);gap(10);
+        button("Ver placar da partida",false,()->openLive(ev.optString("id")));
         if(ev.optString("status").equals("OPEN")){
             button("Vou jogar · confirmar presença",true,()->respond(true));
             button("Não vou jogar",false,()->respond(false));
@@ -304,6 +306,17 @@ final class OnlineEventsScreen extends Screen {
                 "/functions/v1/invite?code="+URLEncoder.encode(code,"UTF-8");
             share("PELADA LEAGUE · "+name+"\nConfirme sua presença pelo link:\n"+url);
         }catch(Exception ex){a.toast("Não foi possível preparar o convite.");}
+    }
+    private void openLive(String eventId){
+        if(eventId==null||!eventId.matches("[a-fA-F0-9-]{36}")){
+            a.toast("Evento inválido.");return;
+        }
+        a.liveState.eventId=eventId;
+        a.liveState.snapshot=null;
+        a.liveState.loading=false;
+        a.liveState.error="";
+        a.liveState.lastTotal=-1;
+        a.open("live");
     }
     private void onlineFinance(String eventId){
         if(eventId==null||eventId.isEmpty())return;
