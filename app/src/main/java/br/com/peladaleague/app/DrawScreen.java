@@ -12,7 +12,7 @@ final class DrawScreen extends Screen {
         tabs(new String[]{"Participantes","Opções"},a.drawTab,i->{a.drawTab=i;a.refresh();});
         if(a.drawTab==0){
             LinearLayout header=Ui.row(a);header.addView(text("Confirmados ("+eligible.size()+")",14,Ui.WHITE,true),new LinearLayout.LayoutParams(0,-2,1));TextView all=Ui.chip(a,"Todos",a.selected.size()==eligible.size(),()->{if(a.selected.size()==eligible.size())a.selected.clear();else for(DemoDb.Player p:eligible)a.selected.add(p.id);a.refresh();});header.addView(all);add(header);gap(5);
-            if(eligible.isEmpty()){empty("Primeiro, confirme as presenças","Só entram no sorteio os jogadores confirmados nesta sessão.","Ver presenças",()->a.open("attendance"));return;}
+            if(eligible.isEmpty()){empty("Primeiro, confirme as presenças","Só entram no sorteio os jogadores confirmados nesta sessão.","Ver presenças",()->a.open("attendance"));a.mark("draw_action",page.getChildAt(page.getChildCount()-1));return;}
             LinearLayout list=card();List<DemoDb.Player> visible=eligible.subList(0,Math.min(6,eligible.size()));for(DemoDb.Player p:visible)playerRow(list,p);add(list);
             if(eligible.size()>6)button("Selecionar todos os "+eligible.size()+" jogadores",false,()->selectionDialog(eligible));
             sub(a.selected.size()+" selecionados · "+a.teamCount+" times · "+(a.balanced?"Equilibrado":"Aleatório"));
