@@ -3,7 +3,8 @@
 set -eu
 cd "$(dirname "$0")"
 if [ -f app/build.gradle ] && [ -f settings.gradle ]; then
-  echo "Projeto Android ja presente. Abra esta pasta no Code on the Go."
+  if [ -f apply-v02.sh ]; then sh apply-v02.sh; fi
+  echo "Projeto Android presente e atualizado. Abra esta pasta no Code on the Go."
   exit 0
 fi
 if command -v python3 >/dev/null 2>&1; then
@@ -54,4 +55,5 @@ XML
   cp app/src/main/res/drawable/crest.xml app/src/main/res/mipmap-hdpi/ic_launcher.xml
 fi
 sh repair-gradle.sh
+if [ -f apply-v02.sh ]; then sh apply-v02.sh; fi
 echo "Pronto. Abra a pasta clonada no Code on the Go e sincronize o Gradle."
