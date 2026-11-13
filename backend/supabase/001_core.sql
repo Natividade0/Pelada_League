@@ -104,21 +104,21 @@ create table if not exists public.event_payment_log (
 -- SECURITY DEFINER read helpers prevent circular RLS policy evaluation.
 create or replace function public.is_group_owner(p_group uuid) returns boolean
 language sql stable security definer set search_path=public, pg_temp
-as $ select auth.uid() is not null and exists(
+as $$ select auth.uid() is not null and exists(
     select 1 from public.groups where id=p_group and owner_id=auth.uid()
-  ) $;
+  ) $$;
 create or replace function public.is_event_owner(p_event uuid) returns boolean
 language sql stable security definer set search_path=public, pg_temp
-as $ select auth.uid() is not null and exists(
+as $$ select auth.uid() is not null and exists(
     select 1 from public.events e join public.groups g on g.id=e.group_id
     where e.id=p_event and g.owner_id=auth.uid()
-  ) $;
+  ) $$;
 create or replace function public.is_event_attendee(p_event uuid) returns boolean
 language sql stable security definer set search_path=public, pg_temp
-as $ select auth.uid() is not null and exists(
+as $$ select auth.uid() is not null and exists(
     select 1 from public.event_attendance a
     where a.event_id=p_event and a.user_id=auth.uid()
-  ) $;
+  ) $$;
 
 alter table public.profiles enable row level security;
 alter table public.groups enable row level security;
@@ -181,7 +181,7 @@ begin
   insert into public.groups(name,owner_id)values(trim(p_name),actor)returning id into gid;
   insert into public.group_members(group_id,user_id,role)values(gid,actor,'ORGANIZER');
   return jsonb_build_object('id',gid);
-end $;
+end $$;
 
 create or replace function public.create_event(
  p_group uuid,p_title text,p_location text,p_starts_at timestamptz,
@@ -341,7 +341,7 @@ end $$;
 -- Only the organizer/treasurer can read a complete financial participant list.
 create or replace function public.event_finance(p_event uuid) returns jsonb
 language plpgsql security definer set search_path=public, pg_temp
-as $
+as $$
 declare actor uuid:=auth.uid(); ev public.events%rowtype; members jsonb;
 begin
   select * into ev from public.events where id=p_event;
@@ -362,7 +362,7 @@ begin
   where a.event_id=p_event and a.status='CONFIRMED';
   return jsonb_build_object('event_id',ev.id,'fee_cents',ev.fee_cents,
       'field_cost_cents',ev.field_cost_cents,'players',members);
-end $;
+end $$;
 
 revoke all on function public.is_group_owner(uuid) from PUBLIC;
 revoke all on function public.is_event_owner(uuid) from PUBLIC;
