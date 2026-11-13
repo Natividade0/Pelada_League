@@ -7,7 +7,7 @@ final class HomeScreen extends Screen {
     HomeScreen(MainActivity a){super(a);}
     void render(){
         LinearLayout brand=Ui.row(a);SportArt crest=new SportArt(a,"crest",Ui.GOLD);brand.addView(crest,Ui.lp(a,43,48));Motion.breathe(crest);LinearLayout words=Ui.col(a);words.setPadding(Ui.dp(a,8),0,0,0);
-        for(String word:new String[]{"PELADA","LEAGUE"}){TextView t=text(word,16,word.equals("PELADA")?Ui.WHITE:Ui.GOLD,true);t.setTypeface(Typeface.create("sans-serif-condensed",Typeface.BOLD_ITALIC));words.addView(t);}brand.addView(words,new LinearLayout.LayoutParams(0,-2,1));brand.addView(iconButton("settings","Informações do aplicativo",a::info));add(brand);gap(16);
+        for(String word:new String[]{"PELADA","LEAGUE"}){TextView t=text(word,16,word.equals("PELADA")?Ui.WHITE:Ui.GOLD,true);t.setTypeface(Typeface.create("sans-serif-condensed",Typeface.BOLD_ITALIC));words.addView(t);}brand.addView(words,new LinearLayout.LayoutParams(0,-2,1));brand.addView(iconButton("profile","Minha conta por e-mail",()->a.open("account")));brand.addView(iconButton("settings","Informações do aplicativo",a::info));add(brand);gap(16);
         add(text("Olá, "+a.me().name.split(" ")[0]+"!",25,Ui.WHITE,true));sub("Pronto para entrar em campo?");gap(14);
         String[] g=db.group(a.groupId);String status=db.attendance(a.groupId).getOrDefault(a.playerId,DemoDb.PENDING);
         LinearLayout content=Ui.col(a),head=Ui.row(a);head.addView(text("Sua próxima partida",13,Ui.WHITE,true),new LinearLayout.LayoutParams(0,-2,1));head.addView(Ui.badge(a,a.status(status),status.equals(DemoDb.CONFIRMED)));content.addView(head);
