@@ -40,27 +40,27 @@ create or replace function public.live_match_state(p_event uuid,p_action text)
 returns jsonb
 language plpgsql security definer set search_path=public,pg_temp
 as $$
-declare match public.live_matches%rowtype; now_at timestamptz:=clock_timestamp(); delta bigint;
+declare v_match public.live_matches%rowtype; now_at timestamptz:=clock_timestamp(); delta bigint;
 begin
   if not public.live_event_owner(p_event) then raise exception 'Somente o organizador controla o placar.';end if;
   if p_action not in ('LIVE','PAUSED','FINISHED') or p_action is null then raise exception 'Ação inválida.';end if;
   -- Serialize concurrent owner controls for the same event.
   perform 1 from public.events where id=p_event for update;
   insert into public.live_matches(event_id)values(p_event)on conflict do nothing;
-  select * into match from public.live_matches where event_id=p_event for update;
-  if match.state='FINISHED' then raise exception 'A partida já foi encerrada.';end if;
-  if match.state='READY' and p_action='PAUSED' then raise exception 'Inicie a partida primeiro.';end if;
-  if match.state='LIVE' and p_action<>'LIVE' then
-    delta:=greatest(0,(extract(epoch from(now_at-match.running_since))*1000)::bigint);
-    match.elapsed_ms:=match.elapsed_ms+delta;
-    match.running_since:=null;
-  elsif match.state<>'LIVE' and p_action='LIVE' then
-    match.running_since:=now_at;
+  select * into v_match from public.live_matches where event_id=p_event for update;
+  if v_match.state='FINISHED' then raise exception 'A partida já foi encerrada.';end if;
+  if v_match.state='READY' and p_action='PAUSED' then raise exception 'Inicie a partida primeiro.';end if;
+  if v_match.state='LIVE' and p_action<>'LIVE' then
+    delta:=greatest(0,(extract(epoch from(now_at-v_match.running_since))*1000)::bigint);
+    v_match.elapsed_ms:=v_match.elapsed_ms+delta;
+    v_match.running_since:=null;
+  elsif v_match.state<>'LIVE' and p_action='LIVE' then
+    v_match.running_since:=now_at;
   end if;
-  match.state:=p_action;
-  update public.live_matches set state=match.state,elapsed_ms=match.elapsed_ms,
-    running_since=match.running_since,updated_at=now_at where event_id=p_event;
-  return jsonb_build_object('state',match.state,'elapsed_ms',match.elapsed_ms);
+  v_match.state:=p_action;
+  update public.live_matches set state=v_match.state,elapsed_ms=v_match.elapsed_ms,
+    running_since=v_match.running_since,updated_at=now_at where event_id=p_event;
+  return jsonb_build_object('state',v_match.state,'elapsed_ms',v_match.elapsed_ms);
 end $$;
 
 create or replace function public.record_live_event(
@@ -69,15 +69,15 @@ create or replace function public.record_live_event(
 ) returns jsonb
 language plpgsql security definer set search_path=public,pg_temp
 as $$
-declare match public.live_matches%rowtype;record_id bigint;
+declare v_match public.live_matches%rowtype;record_id bigint;
 begin
   if not public.live_event_owner(p_event) then raise exception 'Somente o organizador registra lances.';end if;
   if p_action not in ('GOAL','YELLOW','RED','SUB') or p_action is null
     or p_side not in (0,1) or p_side is null
     or p_minute not between 0 and 240 or p_minute is null
     or p_nonce is null then raise exception 'Lance inválido.';end if;
-  select * into match from public.live_matches where event_id=p_event for update;
-  if match.state<>'LIVE' and match.state<>'PAUSED'
+  select * into v_match from public.live_matches where event_id=p_event for update;
+  if v_match.state<>'LIVE' and v_match.state<>'PAUSED'
     then raise exception 'Inicie a partida antes de registrar lances.';end if;
   if not exists(select 1 from public.event_attendance
      where event_id=p_event and user_id=p_player and status='CONFIRMED')
@@ -100,7 +100,7 @@ create or replace function public.live_match_snapshot(p_event uuid)
 returns jsonb
 language plpgsql stable security definer set search_path=public,pg_temp
 as $$
-declare event_data public.events%rowtype;match public.live_matches%rowtype;
+declare event_data public.events%rowtype;v_match public.live_matches%rowtype;
  owner boolean;players jsonb;timeline jsonb;score_a integer;score_b integer;elapsed bigint;
 begin
   if auth.uid() is null then raise exception 'Entre na sua conta.';end if;
@@ -110,7 +110,7 @@ begin
   if not owner and not exists(select 1 from public.event_attendance
       where event_id=p_event and user_id=auth.uid()) then
       raise exception 'Você não participa deste evento.';end if;
-  select * into match from public.live_matches where event_id=p_event;
+  select * into v_match from public.live_matches where event_id=p_event;
   select coalesce(jsonb_agg(jsonb_build_object('id',a.user_id,'name',p.display_name,
     'position',a.position) order by p.display_name),'[]'::jsonb)
     into players from public.event_attendance a join public.profiles p on p.id=a.user_id
@@ -125,14 +125,14 @@ begin
     from (select * from public.live_match_events where event_id=p_event order by id desc limit 60) q
     join public.profiles p on p.id=q.player_id
     left join public.profiles second on second.id=q.second_player_id;
-  elapsed:=coalesce(match.elapsed_ms,0);
-  if match.state='LIVE' and match.running_since is not null then
-    elapsed:=elapsed+greatest(0,(extract(epoch from(clock_timestamp()-match.running_since))*1000)::bigint);
+  elapsed:=coalesce(v_match.elapsed_ms,0);
+  if v_match.state='LIVE' and v_match.running_since is not null then
+    elapsed:=elapsed+greatest(0,(extract(epoch from(clock_timestamp()-v_match.running_since))*1000)::bigint);
   end if;
   return jsonb_build_object(
     'event_id',p_event,'title',event_data.title,'owner',owner,
-    'state',coalesce(match.state,'READY'),'team_a',coalesce(match.team_a,'Time Amarelo'),
-    'team_b',coalesce(match.team_b,'Time Preto'),'elapsed_ms',elapsed,
+    'state',coalesce(v_match.state,'READY'),'team_a',coalesce(v_match.team_a,'Time Amarelo'),
+    'team_b',coalesce(v_match.team_b,'Time Preto'),'elapsed_ms',elapsed,
     'score_a',score_a,'score_b',score_b,'players',players,'timeline',timeline);
 end $$;
 
