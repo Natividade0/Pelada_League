@@ -6,7 +6,7 @@ import android.widget.*;
 final class HomeScreen extends Screen {
     HomeScreen(MainActivity a){super(a);}
     void render(){
-        LinearLayout brand=Ui.row(a);brand.addView(new SportArt(a,"crest",Ui.GOLD),Ui.lp(a,43,48));LinearLayout words=Ui.col(a);words.setPadding(Ui.dp(a,8),0,0,0);
+        LinearLayout brand=Ui.row(a);SportArt crest=new SportArt(a,"crest",Ui.GOLD);brand.addView(crest,Ui.lp(a,43,48));Motion.breathe(crest);LinearLayout words=Ui.col(a);words.setPadding(Ui.dp(a,8),0,0,0);
         for(String word:new String[]{"PELADA","LEAGUE"}){TextView t=text(word,16,word.equals("PELADA")?Ui.WHITE:Ui.GOLD,true);t.setTypeface(Typeface.create("sans-serif-condensed",Typeface.BOLD_ITALIC));words.addView(t);}brand.addView(words,new LinearLayout.LayoutParams(0,-2,1));brand.addView(iconButton("settings","Informações do aplicativo",a::info));add(brand);gap(16);
         add(text("Olá, "+a.me().name.split(" ")[0]+"!",25,Ui.WHITE,true));sub("Pronto para entrar em campo?");gap(14);
         String[] g=db.group(a.groupId);String status=db.attendance(a.groupId).getOrDefault(a.playerId,DemoDb.PENDING);
