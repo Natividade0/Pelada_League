@@ -1,6 +1,6 @@
-# Pelada League · 0.5.0-alpha
+# Pelada League · 0.6.0-alpha
 
-> **Versão 0.5: funcionalidades locais e preparação online.** O controle financeiro manual, isenção dos goleiros, cronômetro, substituições e apresentação tática animada agora possuem código nativo. Cadastro e eventos online usam autenticação/Supabase e só funcionam depois de criar e configurar um projeto Free e SMTP adequados. Sem servidor conectado o modo local continua disponível. Não há compras nem assinaturas. **[Guia completo de implantação 0.5](docs/ATUALIZACAO_0.5.md)**.
+> **Versão 0.6: temporadas e premiações locais, eventos semanais, lembretes opcionais e placar compartilhado preparado para Supabase gratuito.** O controle financeiro manual, isenção dos goleiros, cronômetro, substituições e apresentação tática animada agora possuem código nativo. Cadastro e eventos online usam autenticação/Supabase e só funcionam depois de criar e configurar um projeto Free e SMTP adequados. Sem servidor conectado o modo local continua disponível. Não há compras nem assinaturas. **[Guia de implantação da 0.6](docs/ATUALIZACAO_0.6.md)**.
 
 Aplicativo Android nativo para organizar peladas, confirmar presenças, sortear equipes e registrar partidas. Esta atualização reconstrói as oito telas da direção visual preto/dourado e mantém o banco SQLite da versão anterior.
 
