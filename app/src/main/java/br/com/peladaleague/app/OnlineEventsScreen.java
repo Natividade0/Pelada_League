@@ -39,6 +39,7 @@ final class OnlineEventsScreen extends Screen {
             return;
         }
         if(!state.loaded&&!state.loading)a.shell.post(this::load);
+        if(!state.code.isEmpty()&&state.preview==null&&!state.loading)a.shell.post(()->open(state.code));
         LinearLayout intro=card();
         intro.addView(text("Peladas compartilhadas",17,Ui.GOLD,true));
         Ui.put(intro,text("Organize um evento, envie um convite e receba confirmações de pessoas diferentes. As inscrições ficam no servidor.",12,Ui.MUTED,false),6);
