@@ -21,10 +21,17 @@ final class GroupScreen extends Screen {
         if(member){String label=status.equals(DemoDb.CONFIRMED)?"Presença confirmada · cancelar":status.equals(DemoDb.WAITLIST)?"Na lista de espera · cancelar":"Confirmar minha presença";
             Ui.put(next,Ui.button(a,label,true,()->a.safely(()->{String now=db.markAttendance(a.groupId,a.playerId,status.equals(DemoDb.CONFIRMED)||status.equals(DemoDb.WAITLIST)?DemoDb.DECLINED:DemoDb.CONFIRMED);a.toast(now.equals(DemoDb.WAITLIST)?"Você entrou na lista de espera.":now.equals(DemoDb.CONFIRMED)?"Presença confirmada.":"Presença cancelada.");a.refresh();Motion.score(a.page);})),8);}
         else Ui.put(next,text("Seu perfil local ainda não faz parte deste grupo.",12,Ui.MUTED,false),8);
-        add(a.mark("group_presence",next));gap(15);heading("Ações do grupo");LinearLayout actions=card();
+        add(a.mark("group_presence",next));gap(12);
+        LocalFinance.Summary finance=a.finance.summary(a.groupId);
+        if(finance.people>0){
+            TextView summary=text("Pagamentos · "+FinanceScreen.money(finance.received)+" recebido · "+FinanceScreen.money(finance.pending)+" pendente",12,Ui.GOLD,true);
+            summary.setMinHeight(Ui.dp(a,44));Ui.tappable(summary,()->a.open("finance"));add(summary);
+        }
+        gap(15);heading("Ações do grupo");LinearLayout actions=card();
         if(a.canManage()){actions.addView(Ui.action(a,"calendar","Criar partida",null,()->a.open("draw")));Ui.divider(actions);}
         actions.addView(Ui.action(a,"shuffle","Sortear times",null,()->a.open("draw")));Ui.divider(actions);
         actions.addView(Ui.action(a,"users",a.canManage()?"Gerenciar presenças":"Ver presenças",db.waitCount(a.groupId)+" na lista de espera",()->a.open("attendance")));Ui.divider(actions);
+        actions.addView(Ui.action(a,"wallet","Pagamentos da pelada","Pix manual, contribuições e isenção de goleiros",()->a.open("finance")));Ui.divider(actions);
         actions.addView(Ui.action(a,"stats","Estatísticas do grupo",null,()->{a.groupTab=3;a.refresh();}));
         if(a.canManage()){Ui.divider(actions);actions.addView(Ui.action(a,"plus","Convidar jogadores",null,()->share("Vamos jogar na "+g[0]+"?\n"+g[2]+" · "+g[1]+"\nCombine a participação com o organizador. Convite informativo do Pelada League; esta versão não permite entrar por link.")));}
         add(actions);gap(14);heading("Sessões da pelada");LinearLayout sessions=card();int count=0;for(String[] s:db.sessions(a.groupId)){if(count++==3)break;String date=new java.text.SimpleDateFormat("dd/MM/yyyy",new Locale("pt","BR")).format(new Date(Long.parseLong(s[1])));line(sessions,"calendar",date+" · "+(s[2].equals("1")?"Atual":"Arquivada"),s[3]+" presentes");}add(sessions);
