@@ -21,7 +21,7 @@ final class DrawScreen extends Screen {
             pair(page,Ui.button(a,"Equilibrado",a.balanced,()->{a.balanced=true;db.clearDraw(a.groupId);a.refresh();}),Ui.button(a,"Aleatório",!a.balanced,()->{a.balanced=false;db.clearDraw(a.groupId);a.refresh();}));sub("No equilibrado, habilidade, goleiros e posições entram no cálculo. O número de jogadores por time varia no máximo em um.");gap(10);
         }
         if(a.selected.size()<a.teamCount*2){sub("São necessários pelo menos "+(a.teamCount*2)+" confirmados para formar "+a.teamCount+" times.");button("Voltar às presenças",false,()->a.open("attendance"));}
-        TextView draw=Ui.button(a,a.drawBusy?"Distribuindo jogadores…":"Sortear Times",true,this::perform);draw.setEnabled(!a.drawBusy&&a.selected.size()>=a.teamCount*2&&a.canManage());draw.setAlpha(draw.isEnabled()?1:.5f);Ui.put(page,draw,12);
+        TextView draw=Ui.button(a,a.drawBusy?"Distribuindo jogadores…":"Sortear Times",true,this::perform);draw.setEnabled(!a.drawBusy&&a.selected.size()>=a.teamCount*2&&a.canManage());draw.setAlpha(draw.isEnabled()?1:.5f);Ui.put(page,a.mark("draw_action",draw),12);
         if(!a.canManage())sub("O organizador pode salvar os sorteios oficiais da sessão.");
         List<List<DemoDb.Player>> saved=db.savedDraw(a.groupId);if(saved.isEmpty())return;gap(16);heading("Times sorteados");LinearLayout result=Ui.col(a);
         for(int i=0;i<saved.size();i+=2){LinearLayout left=team(i,saved.get(i));View right=i+1<saved.size()?team(i+1,saved.get(i+1)):new View(a);pair(result,left,right);Ui.space(result,10);}add(result);
