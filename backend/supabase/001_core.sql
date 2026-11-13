@@ -101,6 +101,25 @@ create table if not exists public.event_payment_log (
   occurred_at timestamptz not null default now()
 );
 
+-- SECURITY DEFINER read helpers prevent circular RLS policy evaluation.
+create or replace function public.is_group_owner(p_group uuid) returns boolean
+language sql stable security definer set search_path=public, pg_temp
+as $ select auth.uid() is not null and exists(
+    select 1 from public.groups where id=p_group and owner_id=auth.uid()
+  ) $;
+create or replace function public.is_event_owner(p_event uuid) returns boolean
+language sql stable security definer set search_path=public, pg_temp
+as $ select auth.uid() is not null and exists(
+    select 1 from public.events e join public.groups g on g.id=e.group_id
+    where e.id=p_event and g.owner_id=auth.uid()
+  ) $;
+create or replace function public.is_event_attendee(p_event uuid) returns boolean
+language sql stable security definer set search_path=public, pg_temp
+as $ select auth.uid() is not null and exists(
+    select 1 from public.event_attendance a
+    where a.event_id=p_event and a.user_id=auth.uid()
+  ) $;
+
 alter table public.profiles enable row level security;
 alter table public.groups enable row level security;
 alter table public.group_members enable row level security;
@@ -123,41 +142,25 @@ create policy groups_owner_read on public.groups for select to authenticated
 
 drop policy if exists membership_self_or_owner on public.group_members;
 create policy membership_self_or_owner on public.group_members for select to authenticated
-  using(user_id=auth.uid() or exists(
-    select 1 from public.groups g where g.id=group_id and g.owner_id=auth.uid()
-  ));
+  using(user_id=auth.uid() or public.is_group_owner(group_id));
 
 drop policy if exists events_visible_to_participant on public.events;
 create policy events_visible_to_participant on public.events for select to authenticated
-  using(exists(select 1 from public.groups g where g.id=group_id and g.owner_id=auth.uid())
-        or exists(select 1 from public.event_attendance a
-            where a.event_id=id and a.user_id=auth.uid()));
+  using(public.is_group_owner(group_id) or public.is_event_attendee(id));
 
 drop policy if exists attendance_self_or_owner on public.event_attendance;
 create policy attendance_self_or_owner on public.event_attendance for select to authenticated
-  using(user_id=auth.uid() or exists(
-    select 1 from public.events e join public.groups g on g.id=e.group_id
-    where e.id=event_id and g.owner_id=auth.uid()
-  ));
+  using(user_id=auth.uid() or public.is_event_owner(event_id));
 
 drop policy if exists payments_self_or_owner on public.event_payments;
 create policy payments_self_or_owner on public.event_payments for select to authenticated
-  using(user_id=auth.uid() or exists(
-    select 1 from public.events e join public.groups g on g.id=e.group_id
-    where e.id=event_id and g.owner_id=auth.uid()
-  ));
+  using(user_id=auth.uid() or public.is_event_owner(event_id));
 drop policy if exists exceptions_self_or_owner on public.event_exemptions;
 create policy exceptions_self_or_owner on public.event_exemptions for select to authenticated
-  using(user_id=auth.uid() or exists(
-    select 1 from public.events e join public.groups g on g.id=e.group_id
-    where e.id=event_id and g.owner_id=auth.uid()
-  ));
+  using(user_id=auth.uid() or public.is_event_owner(event_id));
 drop policy if exists payment_log_owner on public.event_payment_log;
 create policy payment_log_owner on public.event_payment_log for select to authenticated
-  using(exists(
-    select 1 from public.events e join public.groups g on g.id=e.group_id
-    where e.id=event_id and g.owner_id=auth.uid()
-  ));
+  using(public.is_event_owner(event_id));
 
 revoke all on public.profiles,public.groups,public.group_members,public.events,
   public.event_attendance,public.event_exemptions,public.event_payments,public.event_payment_log
@@ -335,6 +338,12 @@ begin
   return true;
 end $$;
 
+revoke all on function public.is_group_owner(uuid) from PUBLIC;
+revoke all on function public.is_event_owner(uuid) from PUBLIC;
+revoke all on function public.is_event_attendee(uuid) from PUBLIC;
+grant execute on function public.is_group_owner(uuid) to authenticated;
+grant execute on function public.is_event_owner(uuid) to authenticated;
+grant execute on function public.is_event_attendee(uuid) to authenticated;
 revoke all on function public.create_player_profile() from PUBLIC;
 revoke all on function public.create_group(text) from PUBLIC;
 revoke all on function public.create_event(uuid,text,text,timestamptz,integer,integer,integer,boolean,text) from PUBLIC;
