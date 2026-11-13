@@ -56,4 +56,7 @@ XML
 fi
 sh repair-gradle.sh
 if [ -f apply-v02.sh ]; then sh apply-v02.sh; fi
+# A fresh clone can reach the latest local preview without manual extractions.
+if [ -f apply-v02.sh ]; then sh apply-v02.sh; fi
+if [ -f apply-v03.sh ]; then sh apply-v03.sh; fi
 echo "Pronto. Abra a pasta clonada no Code on the Go e sincronize o Gradle."
