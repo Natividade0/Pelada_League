@@ -10,8 +10,8 @@ URL: `https://github.com/Natividade0/Pelada_League.git`
 
 **Como a primeira importação do código está em um pacote comprimido**, há duas formas de abrir:
 
-1. Se o repositório já mostrar pastas `app/` e `core/`, clone, abra a raiz do projeto no Code on the Go e sincronize o Gradle.
-2. Se ainda aparecer apenas a pasta `payload/`, clone o repositório e execute `sh bootstrap.sh` no terminal da pasta clonada **antes** de abrir o projeto. O script expande o código e prepara os recursos visuais. Ele aceita Python 3; sem Pillow, usa fundos vetoriais alternativos. Para imagens mais próximas do conceito aprovado, execute `python3 -m pip install pillow && python3 make_assets.py`.
+1. Faça o clone privado na sua conta autenticada, abra a pasta pelo Code on the Go e sincronize o Gradle. O `settings.gradle` tenta extrair o projeto automaticamente na primeira sincronização.
+2. Se a sincronização não conseguir extrair (por falta de Python 3 ou xz), execute `sh bootstrap.sh` no terminal da pasta clonada e sincronize novamente. Sem Pillow, o script usa recursos vetoriais alternativos. Para gerar as imagens completas, use `python3 -m pip install pillow && python3 make_assets.py`.
 3. Alternativamente, no GitHub, abra **Actions → Import Pelada League Android source → Run workflow**. Esse workflow expande o projeto, gera os recursos visuais e tenta compilar um APK de teste.
 
 Configuração: Java 17, AGP 8.11, Gradle 8.13, compileSdk 35. O Android SDK é necessário para compilar.
