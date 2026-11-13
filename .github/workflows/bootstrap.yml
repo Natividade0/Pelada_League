@@ -1,50 +1,41 @@
-name: Import Pelada League Android source
+name: Pelada League Android 0.3
 on:
-  push:
-    paths:
-      - 'payload/**'
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/bootstrap.yml'
+      - 'apply-v03.sh'
 permissions:
-  contents: write
+  contents: read
 jobs:
-  import-source:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Restore project source
-        shell: bash
-        run: |
-          set -euo pipefail
-          cat payload/part*.txt | base64 --decode | tar -xJ
-          sh repair-gradle.sh
-          python3 -m pip install --quiet pillow
-          python3 make_assets.py
-          sh apply-v02.sh
-          rm -rf payload .github/workflows/bootstrap.yml
-      - name: Commit complete app
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name "peladaleague-bootstrap[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "feat: import Android alpha with gold/black UI" 
-          git push origin HEAD:main
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
       - uses: android-actions/setup-android@v3
-      - name: Install Android SDK
-        run: sdkmanager "platforms;android-35" "build-tools;36.0.0"
+      - name: Install SDK
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.6.1'
-      - name: Run core tests
-        run: ./scripts/test-core.sh
-      - name: Build debug APK
+      - name: Restore and upgrade source
+        run: |
+          cat payload/part[0-9][0-9].txt | base64 --decode | tar -xJ
+          sh repair-gradle.sh
+          python3 -m pip install --quiet pillow
+          python3 make_assets.py
+          sh apply-v02.sh
+          sh apply-v03.sh
+      - name: Unit tests
+        run: sh scripts/test-core.sh
+      - name: Build APK
         run: gradle :app:assembleDebug --no-daemon
       - uses: actions/upload-artifact@v4
         with:
-          name: PeladaLeague-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: PeladaLeague-0.3-debug
+          path: app/build/outputs/apk/debug/*.apk
