@@ -29,7 +29,7 @@ public final class DemoDb extends SQLiteOpenHelper {
         public Card(long id,long gameId,long playerId,String name,int team,String color,int minute){this.id=id;this.gameId=gameId;this.playerId=playerId;this.name=name;this.team=team;this.color=color;this.minute=minute;}
     }
     public static final String CONFIRMED="CONFIRMED",WAITLIST="WAITLIST",DECLINED="DECLINED",PENDING="PENDING";
-    private static final int VERSION=3;
+    private static final int VERSION=4;
     private final SecureRandom rng=new SecureRandom();
     public DemoDb(Context c){super(c,"pelada_league_demo.db",null,VERSION);}
     @Override public void onCreate(SQLiteDatabase d){
@@ -41,6 +41,7 @@ public final class DemoDb extends SQLiteOpenHelper {
         d.execSQL("CREATE TABLE approvals(game_id INTEGER NOT NULL, side INTEGER NOT NULL, salt TEXT, secret_hash TEXT, expires INTEGER NOT NULL DEFAULT 0, attempts INTEGER NOT NULL DEFAULT 0, approved INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(game_id,side))");
         createExtras(d);
         createV3(d);
+        createV4(d);
         for(String[] x:new String[][]{{"Rafael","ATA","88"},{"Bruno","MEI","78"},{"Lucas","ATA","84"},{"Matheus","GOL","79"},{"Carlos","ZAG","74"},{"Pedro","ATA","81"},{"Gabriel","MEI","82"},{"André","GOL","80"},{"João","ZAG","76"},{"Caio","MEI","73"},{"Felipe","ZAG","79"},{"Diego","ATA","77"},{"Henrique","MEI","74"},{"Thiago","ZAG","72"}}){
             ContentValues p=new ContentValues();p.put("name",x[0]);p.put("pos",x[1]);p.put("skill",Integer.parseInt(x[2]));d.insert("players",null,p);
         }
@@ -72,10 +73,17 @@ public final class DemoDb extends SQLiteOpenHelper {
             try(Cursor c=d.rawQuery("SELECT id FROM groups",null)){while(c.moveToNext())startSession(d,c.getLong(0));}
         }
         if(old<3)createV3(d);
+        if(old<4)createV4(d);
     }
     private static void createV3(SQLiteDatabase d){
         d.execSQL("CREATE TABLE IF NOT EXISTS saved_draws(session_id INTEGER PRIMARY KEY, fingerprint TEXT NOT NULL, squads TEXT NOT NULL)");
         d.execSQL("CREATE TABLE IF NOT EXISTS audit(id INTEGER PRIMARY KEY AUTOINCREMENT,game_id INTEGER,action TEXT NOT NULL,created_at INTEGER NOT NULL)");
+    }
+    private static void createV4(SQLiteDatabase d){
+        d.execSQL("CREATE TABLE IF NOT EXISTS match_appearances(game_id INTEGER NOT NULL,player_id INTEGER NOT NULL,team INTEGER NOT NULL CHECK(team IN (0,1)),PRIMARY KEY(game_id,player_id))");
+        d.execSQL("INSERT OR IGNORE INTO match_appearances(game_id,player_id,team) SELECT game_id,player_id,team FROM game_roster");
+        d.execSQL("CREATE TABLE IF NOT EXISTS substitutions(id INTEGER PRIMARY KEY AUTOINCREMENT,game_id INTEGER NOT NULL,team INTEGER NOT NULL,out_player INTEGER NOT NULL,in_player INTEGER NOT NULL,minute INTEGER NOT NULL,created_at INTEGER NOT NULL)");
+        d.execSQL("CREATE INDEX IF NOT EXISTS idx_subs_game ON substitutions(game_id,id)");
     }
     private static long startSession(SQLiteDatabase d,long group){ContentValues v=new ContentValues();v.put("group_id",group);v.put("created_at",System.currentTimeMillis());v.put("active",1);return d.insertOrThrow("sessions",null,v);}
     private static void seedGoals(SQLiteDatabase d,long game,int[][] data){for(int[] x:data){ContentValues g=new ContentValues();g.put("game_id",game);g.put("player_id",x[0]);g.put("team",x[1]);g.put("minute",x[2]);d.insert("goals",null,g);}}
@@ -133,7 +141,11 @@ public final class DemoDb extends SQLiteOpenHelper {
             d.setTransactionSuccessful();return id;
         }finally{d.endTransaction();}
     }
-    private static void insertLineup(SQLiteDatabase d,long game,long player,int side){ContentValues v=new ContentValues();v.put("game_id",game);v.put("player_id",player);v.put("team",side);d.insertOrThrow("game_roster",null,v);}
+    private static void insertLineup(SQLiteDatabase d,long game,long player,int side){
+        ContentValues v=new ContentValues();v.put("game_id",game);v.put("player_id",player);v.put("team",side);
+        d.insertOrThrow("game_roster",null,v);
+        d.insertWithOnConflict("match_appearances",null,v,SQLiteDatabase.CONFLICT_IGNORE);
+    }
     public List<Player> roster(long game,int side){return playerQuery("SELECT p.id,p.name,p.pos,p.skill FROM players p JOIN game_roster r ON r.player_id=p.id WHERE r.game_id=? AND r.team=? ORDER BY p.name",new String[]{""+game,""+side});}
     public Game game(long id){try(Cursor c=getReadableDatabase().rawQuery("SELECT id,group_id,team_a,team_b,status,day FROM games WHERE id=?",new String[]{""+id})){if(c.moveToFirst())return readGame(c);}return null;}
     private static Game readGame(Cursor c){return new Game(c.getLong(0),c.getLong(1),c.getString(2),c.getString(3),c.getString(4),c.getString(5));}
@@ -157,6 +169,75 @@ public final class DemoDb extends SQLiteOpenHelper {
     public List<Card> cards(long game){List<Card> out=new ArrayList<>();try(Cursor c=getReadableDatabase().rawQuery("SELECT c.id,c.game_id,c.player_id,p.name,c.team,c.color,c.minute FROM cards c JOIN players p ON p.id=c.player_id WHERE c.game_id=? ORDER BY c.minute,c.id",new String[]{""+game})){while(c.moveToNext())out.add(new Card(c.getLong(0),c.getLong(1),c.getLong(2),c.getString(3),c.getInt(4),c.getString(5),c.getInt(6)));}return out;}
     public void addCard(long game,long player,int side,String color,int minute){requireDraft(game);requireRoster(game);if(side<0||side>1)throw new IllegalArgumentException("Equipe inválida");if(!"YELLOW".equals(color)&&!"RED".equals(color)||minute<0||minute>240)throw new IllegalArgumentException("Cartão inválido");if(count("SELECT COUNT(*) FROM game_roster WHERE game_id=?",new String[]{""+game})>0&&count("SELECT COUNT(*) FROM game_roster WHERE game_id=? AND player_id=? AND team=?",new String[]{""+game,""+player,""+side})!=1)throw new IllegalArgumentException("Jogador fora da escalação");ContentValues v=new ContentValues();v.put("game_id",game);v.put("player_id",player);v.put("team",side);v.put("color",color);v.put("minute",minute);getWritableDatabase().insertOrThrow("cards",null,v);}
     public void deleteCard(long id,long game){requireDraft(game);getWritableDatabase().delete("cards","id=? AND game_id=?",new String[]{""+id,""+game});}
+    static final class Substitution {
+        final long id,gameId,outId,inId;final int team,minute;final String outName,inName;
+        Substitution(long id,long gameId,int team,long outId,long inId,String outName,String inName,int minute){
+            this.id=id;this.gameId=gameId;this.team=team;this.outId=outId;this.inId=inId;
+            this.outName=outName;this.inName=inName;this.minute=minute;
+        }
+    }
+    public List<Substitution> substitutions(long game){
+        List<Substitution> result=new ArrayList<>();
+        String sql="SELECT s.id,s.game_id,s.team,s.out_player,s.in_player,"+
+            "COALESCE(p1.name,'?'),COALESCE(p2.name,'?'),s.minute FROM substitutions s "+
+            "LEFT JOIN players p1 ON p1.id=s.out_player LEFT JOIN players p2 ON p2.id=s.in_player "+
+            "WHERE s.game_id=? ORDER BY s.id DESC";
+        try(Cursor c=getReadableDatabase().rawQuery(sql,new String[]{""+game})){
+            while(c.moveToNext())result.add(new Substitution(c.getLong(0),c.getLong(1),c.getInt(2),
+                c.getLong(3),c.getLong(4),c.getString(5),c.getString(6),c.getInt(7)));
+        }
+        return result;
+    }
+    public void substitute(long game,int side,long out,long incoming,int minute){
+        requireDraft(game);requireRoster(game);
+        if(side<0||side>1||minute<0||minute>240||out==incoming)throw new IllegalArgumentException("Substituição inválida.");
+        Game m=game(game);if(m==null)throw new IllegalArgumentException("Partida inexistente.");
+        if(count("SELECT COUNT(*) FROM game_roster WHERE game_id=? AND player_id=? AND team=?",
+            new String[]{""+game,""+out,""+side})!=1)throw new IllegalArgumentException("Jogador que sai não está em campo.");
+        if(count("SELECT COUNT(*) FROM game_roster WHERE game_id=? AND player_id=?",
+            new String[]{""+game,""+incoming})>0)throw new IllegalArgumentException("Jogador que entra já está em campo.");
+        if(count("SELECT COUNT(*) FROM match_appearances WHERE game_id=? AND player_id=? AND team<>?",
+            new String[]{""+game,""+incoming,""+side})>0)throw new IllegalArgumentException("Jogador já atua no time adversário.");
+        if(count("SELECT COUNT(*) FROM attendance a JOIN sessions s ON s.id=a.session_id "+
+            "WHERE s.group_id=? AND a.player_id=? AND a.status='CONFIRMED' AND s.active=1",
+            new String[]{""+m.groupId,""+incoming})!=1)throw new IllegalArgumentException("O substituto precisa confirmar presença.");
+        SQLiteDatabase d=getWritableDatabase();d.beginTransaction();
+        try{
+            d.delete("game_roster","game_id=? AND player_id=? AND team=?",
+                new String[]{""+game,""+out,""+side});
+            insertLineup(d,game,incoming,side);
+            ContentValues v=new ContentValues();v.put("game_id",game);v.put("team",side);
+            v.put("out_player",out);v.put("in_player",incoming);v.put("minute",minute);
+            v.put("created_at",System.currentTimeMillis());
+            d.insertOrThrow("substitutions",null,v);
+            d.setTransactionSuccessful();
+        }finally{d.endTransaction();}
+    }
+    public void undoLastSubstitution(long game){
+        requireDraft(game);
+        List<Substitution> history=substitutions(game);
+        if(history.isEmpty())throw new IllegalStateException("Não há substituição para desfazer.");
+        Substitution last=history.get(0);
+        if(count("SELECT COUNT(*) FROM goals WHERE game_id=? AND (player_id=? OR assist_id=?)",
+            new String[]{""+game,""+last.inId,""+last.inId})>0||
+           count("SELECT COUNT(*) FROM cards WHERE game_id=? AND player_id=?",
+            new String[]{""+game,""+last.inId})>0)
+            throw new IllegalStateException("Substituto já participou de lances. Corrija os lances antes de desfazer.");
+        if(count("SELECT COUNT(*) FROM game_roster WHERE game_id=? AND player_id=?",
+            new String[]{""+game,""+last.inId})!=1)
+            throw new IllegalStateException("Há outras substituições após esta; não é possível desfazer.");
+        SQLiteDatabase d=getWritableDatabase();d.beginTransaction();
+        try{
+            d.delete("game_roster","game_id=? AND player_id=?",new String[]{""+game,""+last.inId});
+            ContentValues v=new ContentValues();v.put("game_id",game);v.put("player_id",last.outId);v.put("team",last.team);
+            d.insertOrThrow("game_roster",null,v);
+            d.delete("substitutions","id=?",new String[]{""+last.id});
+            if(count("SELECT COUNT(*) FROM substitutions WHERE game_id=? AND in_player=?",
+                new String[]{""+game,""+last.inId})==0)
+                d.delete("match_appearances","game_id=? AND player_id=?",new String[]{""+game,""+last.inId});
+            d.setTransactionSuccessful();
+        }finally{d.endTransaction();}
+    }
     public void submit(long id){requireDraft(id);requireRoster(id);ContentValues v=new ContentValues();v.put("status","PENDING");getWritableDatabase().update("games",v,"id=? AND status='DRAFT'",new String[]{""+id});}
     /** Local demo only. No account ownership proof: never label as official verification. */
     public String generatePin(long game,int side){if(approved(game,side))return null;if(side!=0&&side!=1)throw new IllegalArgumentException("Representante inválido");Game m=game(game);if(m==null||!"PENDING".equals(m.status))return null;String pin=String.format(Locale.US,"%04d",rng.nextInt(10000));byte[] saltBytes=new byte[16];rng.nextBytes(saltBytes);String salt=Base64.getEncoder().encodeToString(saltBytes);ContentValues v=new ContentValues();v.put("game_id",game);v.put("side",side);v.put("salt",salt);v.put("secret_hash",hash(salt+":"+pin));v.put("expires",System.currentTimeMillis()+180000);v.put("attempts",0);v.put("approved",0);getWritableDatabase().insertWithOnConflict("approvals",null,v,SQLiteDatabase.CONFLICT_REPLACE);return pin;}
@@ -174,7 +255,7 @@ public final class DemoDb extends SQLiteOpenHelper {
     public Map<String,Integer> topScorers(long group){Map<String,Integer> o=new LinkedHashMap<>();try(Cursor c=getReadableDatabase().rawQuery("SELECT p.name,COUNT(*) g FROM goals x JOIN games m ON m.id=x.game_id JOIN players p ON p.id=x.player_id WHERE m.group_id=? AND m.status='DEMO_APPROVED' AND x.own_goal=0 GROUP BY p.id ORDER BY g DESC,p.name LIMIT 30",new String[]{""+group})){while(c.moveToNext())o.put(c.getString(0),c.getInt(1));}return o;}
     public int playerGoals(long player){return count("SELECT COUNT(*) FROM goals g JOIN games m ON m.id=g.game_id WHERE m.status='DEMO_APPROVED' AND g.player_id=? AND g.own_goal=0",new String[]{""+player});}
     public int playerAssists(long player){return count("SELECT COUNT(*) FROM goals g JOIN games m ON m.id=g.game_id WHERE m.status='DEMO_APPROVED' AND g.assist_id=?",new String[]{""+player});}
-    public int playerMatches(long player){return count("SELECT COUNT(DISTINCT m.id) FROM games m JOIN game_roster r ON r.game_id=m.id WHERE m.status='DEMO_APPROVED' AND r.player_id=?",new String[]{""+player});}
+    public int playerMatches(long player){return count("SELECT COUNT(DISTINCT m.id) FROM games m JOIN match_appearances r ON r.game_id=m.id WHERE m.status='DEMO_APPROVED' AND r.player_id=?",new String[]{""+player});}
     private void requireRoster(long game){
         if(roster(game,0).size()<2||roster(game,1).size()<2)throw new IllegalStateException("Esta partida antiga não tem escalação. Crie uma partida pelo sorteador.");
     }
@@ -227,7 +308,7 @@ public final class DemoDb extends SQLiteOpenHelper {
         List<String[]> out=new ArrayList<>();try(Cursor c=getReadableDatabase().rawQuery("SELECT s.id,s.created_at,s.active,(SELECT COUNT(*) FROM attendance a WHERE a.session_id=s.id AND a.status='CONFIRMED') FROM sessions s WHERE group_id=? ORDER BY id DESC",new String[]{""+group})){while(c.moveToNext())out.add(new String[]{c.getString(0),c.getString(1),c.getString(2),c.getString(3)});}return out;
     }
     public List<Game> playerHistory(long player){
-        List<Game> out=new ArrayList<>();try(Cursor c=getReadableDatabase().rawQuery("SELECT DISTINCT m.id,m.group_id,m.team_a,m.team_b,m.status,m.day FROM games m JOIN game_roster r ON r.game_id=m.id WHERE r.player_id=? ORDER BY m.id DESC",new String[]{""+player})){while(c.moveToNext())out.add(readGame(c));}return out;
+        List<Game> out=new ArrayList<>();try(Cursor c=getReadableDatabase().rawQuery("SELECT DISTINCT m.id,m.group_id,m.team_a,m.team_b,m.status,m.day FROM games m JOIN match_appearances r ON r.game_id=m.id WHERE r.player_id=? ORDER BY m.id DESC",new String[]{""+player})){while(c.moveToNext())out.add(readGame(c));}return out;
     }
     public int cardCount(long game,int side,String color){return count("SELECT COUNT(*) FROM cards WHERE game_id=? AND team=? AND color=?",new String[]{""+game,""+side,color});}
     public void addMember(long group,long player){ContentValues v=new ContentValues();v.put("group_id",group);v.put("player_id",player);getWritableDatabase().insertWithOnConflict("members",null,v,SQLiteDatabase.CONFLICT_IGNORE);}
