@@ -1,3 +1,11 @@
+# Pelada League — atualização visual 0.3.0-alpha
+
+**Interface premium refeita com base no mockup preto e dourado.** A v0.3 inclui navegação e cartões redesenhados, iconografia esportiva original, animações e sorteador visual de jogadores confirmados. Para atualizar no Code on the Go: `git pull origin main` e `sh apply-v03.sh`. Leia [ATUALIZACAO_0.3.md](ATUALIZACAO_0.3.md).
+
+**Importante:** ainda é uma demonstração local. O APK precisa passar pela compilação e pelo teste visual no aparelho; não há autenticação remota.
+
+---
+
 # ⚽ Pelada League — alfa Android 0.1.0
 
 Projeto Android nativo (Java + Gradle) com identidade visual **preto, dourado e amarelo** inspirada na prévia aprovada pelo criador.
