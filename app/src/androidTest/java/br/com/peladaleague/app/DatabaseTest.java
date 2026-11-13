@@ -25,7 +25,44 @@ public final class DatabaseTest extends InstrumentationTestCase {
     public void testGoalOwnAssistCardsAndDraftLock(){long id=match();List<DemoDb.Player> a=db.roster(id,0),b=db.roster(id,1);long scorer=a.get(0).id,assist=a.get(1).id;int before=db.playerGoals(scorer);db.addGoal(id,scorer,0,12,assist,false);db.addGoal(id,b.get(0).id,0,20,0,true);assertEquals(2,db.goals(id,0));assertEquals(before,db.playerGoals(scorer));rejected(()->db.addGoal(id,999,0,2));rejected(()->db.addGoal(id,scorer,0,2,scorer,false));rejected(()->db.addGoal(id,b.get(0).id,0,2,assist,true));db.addCard(id,scorer,0,"YELLOW",18);assertEquals(1,db.cardCount(id,0,"YELLOW"));DemoDb.Goal g=db.goals(id).get(0);db.editGoal(g.id,id,scorer,0,13,assist,false);db.submit(id);rejected(()->db.addGoal(id,scorer,0,35));rejected(()->db.deleteGoal(g.id,id));String p=db.generatePin(id,0),q=db.generatePin(id,1);assertTrue(p.matches("[0-9]{4}"));assertFalse(db.verifyPin(id,0,p.substring(0,3)));assertTrue(db.verifyPin(id,0,p));assertFalse(db.verifyPin(id,0,p));assertEquals("PENDING",db.game(id).status);assertTrue(db.verifyPin(id,1,q));assertEquals("DEMO_APPROVED",db.game(id).status);assertEquals(before+1,db.playerGoals(scorer));assertEquals(1,db.playerMatches(scorer));assertEquals(1,db.playerAssists(assist));assertEquals(2,db.goals(id,0));rejected(()->db.reopen(id));}
     public void testCorrectionInvalidatesPins(){long id=match();db.submit(id);String pin=db.generatePin(id,0);assertTrue(db.verifyPin(id,0,pin));db.reopen(id);assertFalse(db.approved(id,0));assertEquals("DRAFT",db.game(id).status);db.submit(id);assertFalse(db.verifyPin(id,0,pin));}
     public void testPinAttemptsAndExpiry(){long id=match();db.submit(id);String pin=db.generatePin(id,0),wrong=pin.equals("0000")?"1111":"0000";for(int i=0;i<3;i++)assertFalse(db.verifyPin(id,0,wrong));assertFalse(db.verifyPin(id,0,pin));pin=db.generatePin(id,0);db.getWritableDatabase().execSQL("UPDATE approvals SET expires=0 WHERE game_id="+id);assertFalse(db.verifyPin(id,0,pin));}
-    public void testUpgradePreservesV2Data(){long id=match();db.addGoal(id,db.roster(id,0).get(0).id,0,4);SQLiteDatabase d=db.getWritableDatabase();d.execSQL("DROP TABLE saved_draws");d.execSQL("DROP TABLE audit");d.setVersion(2);int people=db.players().size();db.close();db=new DemoDb(context);assertEquals(people,db.players().size());assertEquals(1,db.goals(id,0));assertEquals(8,db.confirmedCount(1));assertEquals(4,db.getReadableDatabase().getVersion());assertTrue(db.savedDraw(1).isEmpty());}
+    public void testUpgradePreservesV2Data(){long id=match();db.addGoal(id,db.roster(id,0).get(0).id,0,4);SQLiteDatabase d=db.getWritableDatabase();d.execSQL("DROP TABLE saved_draws");d.execSQL("DROP TABLE audit");d.setVersion(2);int people=db.players().size();db.close();db=new DemoDb(context);assertEquals(people,db.players().size());assertEquals(1,db.goals(id,0));assertEquals(8,db.confirmedCount(1));assertEquals(5,db.getReadableDatabase().getVersion());assertTrue(db.savedDraw(1).isEmpty());}
+    public void testSeasonArchivePreservesOldGamesAndSeparatesAwards(){
+        DemoDb.Season old=db.activeSeason(1);
+        int earlier=db.seasonGames(1,old.id).size();
+        assertTrue(earlier>=3);
+        assertFalse(db.seasonAwards(1,old.id).isEmpty()); // Demo-approved historical goals.
+        long next=db.beginSeason(1,"Temporada de Teste");
+        assertNotSame(old.id,next);
+        assertEquals("Temporada de Teste",db.activeSeason(1).name);
+        assertEquals(earlier,db.seasonGames(1,old.id).size());
+        assertTrue(db.seasonGames(1,next).isEmpty());
+        for(int id=1;id<=8;id++)db.markAttendance(1,id,DemoDb.CONFIRMED);
+        List<DemoDb.Player> roster=db.confirmedPlayers(1);
+        long game=db.addGameWithLineup(1,"Amarelo","Preto",
+            new ArrayList<>(roster.subList(0,4)),
+            new ArrayList<>(roster.subList(4,8)));
+        assertEquals(1,db.seasonGames(1,next).size());
+        long scorer=roster.get(0).id;
+        db.addGoal(game,scorer,0,10);
+        db.submit(game);
+        String codeA=db.generatePin(game,0),codeB=db.generatePin(game,1);
+        assertTrue(db.verifyPin(game,0,codeA));
+        assertTrue(db.verifyPin(game,1,codeB));
+        assertEquals(1,db.seasonAwards(1,next).stream().filter(a->"Artilharia".equals(a.category)).count());
+        assertEquals(1,db.seasonScorers(1,next).values().iterator().next().intValue());
+        assertEquals(earlier,db.seasonGames(1,old.id).size());
+        db.close();
+        db=new DemoDb(context);
+        assertEquals(next,db.activeSeason(1).id);
+        assertEquals(1,db.seasonGames(1,next).size());
+        rejected(()->db.beginSeason(1,"a"));
+    }
+    public void testEachGroupStartsWithOwnSeason(){
+        long group=db.addGroup("Amigos do sábado","Campo Municipal","Sábados");
+        assertNotNull(db.activeSeason(group));
+        assertEquals(0,db.seasonGames(group,db.activeSeason(group).id).size());
+        rejected(()->db.seasonGames(group,db.activeSeason(1).id));
+    }
     public void testSubstitutionKeepsParticipationAndCanUndo(){
         for(int i=1;i<=9;i++)db.markAttendance(1,i,DemoDb.CONFIRMED);
         List<DemoDb.Player> p=db.confirmedPlayers(1);
