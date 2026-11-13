@@ -76,6 +76,7 @@ public final class Ui {
                 case "profile":c.drawCircle(24,16,8,p);c.drawArc(9,27,39,44,180,180,false,p);break;
                 case "shuffle":c.drawLine(8,15,15,15,p);c.drawLine(15,15,34,34,p);c.drawLine(34,34,40,34,p);c.drawLine(34,29,40,34,p);c.drawLine(34,39,40,34,p);c.drawLine(8,34,15,34,p);c.drawLine(15,34,34,15,p);c.drawLine(34,15,40,15,p);c.drawLine(34,10,40,15,p);c.drawLine(34,20,40,15,p);break;
                 case "stats":c.drawLine(9,40,9,27,p);c.drawLine(19,40,19,18,p);c.drawLine(29,40,29,9,p);c.drawLine(39,40,39,23,p);break;
+                case "timer":c.drawCircle(24,26,16,p);c.drawLine(24,26,24,15,p);c.drawLine(24,26,32,30,p);c.drawLine(18,6,30,6,p);c.drawLine(24,10,24,7,p);break;
                 case "wallet":c.drawRoundRect(7,14,41,39,5,5,p);c.drawLine(7,20,39,20,p);c.drawRoundRect(28,24,44,34,3,3,p);c.drawCircle(34,29,1.7f,p);break;
                 case "calendar":c.drawRoundRect(8,12,40,40,4,4,p);c.drawLine(8,21,40,21,p);c.drawLine(16,8,16,16,p);c.drawLine(32,8,32,16,p);break;
                 case "bell":c.drawArc(14,12,34,38,185,170,false,p);c.drawLine(10,38,38,38,p);c.drawLine(21,42,27,42,p);break;
