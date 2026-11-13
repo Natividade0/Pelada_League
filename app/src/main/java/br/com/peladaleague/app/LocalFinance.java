@@ -93,7 +93,7 @@ final class LocalFinance extends SQLiteOpenHelper {
     }
     /** Set the complete amount already received, not a payment increment. Negative corrections are audited. */
     void setTotalPaid(long group,DemoDb.Player player,int total,String method){
-        verifyMember(group,player);
+        verifyMember(group,player.id);
         if(total<0||total>10000000)throw new IllegalArgumentException("Valor pago inválido.");
         if(total>due(group,player))throw new IllegalArgumentException("O valor informado excede a contribuição do jogador.");
         if(!Arrays.asList("PIX","DINHEIRO","OUTRO","AJUSTE").contains(method))throw new IllegalArgumentException("Forma de pagamento inválida.");
