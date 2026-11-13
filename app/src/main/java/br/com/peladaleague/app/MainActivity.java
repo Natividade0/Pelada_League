@@ -19,6 +19,7 @@ public class MainActivity extends Activity {
     final ExecutorService worker=Executors.newSingleThreadExecutor();
     final Map<String,View> tutorialTargets=new HashMap<>();
     Onboarding onboarding;
+    final OnlineEventsScreen.State onlineState=new OnlineEventsScreen.State();
     <T extends View> T mark(String name,T v){tutorialTargets.put(name,v);return v;}
     String role="Organizador"; int shirtNumber=0;
     @Override public void onCreate(Bundle state){
@@ -27,9 +28,23 @@ public class MainActivity extends Activity {
         groupId=pref.getLong("group",1);playerId=pref.getLong("player",1);shirtNumber=pref.getInt("shirt",0);role=pref.getString("role","Organizador");
         if(state!=null){groupId=state.getLong("group",groupId);gameId=state.getLong("game");route=state.getString("route","home");groupTab=state.getInt("groupTab");drawTab=state.getInt("drawTab");matchTab=state.getInt("matchTab");leagueTab=state.getInt("leagueTab");profileTab=state.getInt("profileTab");teamCount=state.getInt("teamCount",2);balanced=state.getBoolean("balanced",true);selectionFingerprint=state.getString("fingerprint","");long[] ids=state.getLongArray("selected");if(ids!=null)for(long id:ids)selected.add(id);ArrayList<String> h=state.getStringArrayList("history");if(h!=null)history.addAll(h);Bundle pos=state.getBundle("positions");if(pos!=null)for(String k:pos.keySet())positions.put(k,pos.getInt(k));}
         else route=pref.getBoolean("entered",false)?"home":"welcome";
+        acceptInvite(getIntent());
         getWindow().setStatusBarColor(Ui.BG);getWindow().setNavigationBarColor(Ui.BG);
         if(android.os.Build.VERSION.SDK_INT>=33)getOnBackInvokedDispatcher().registerOnBackInvokedCallback(android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT,this::back);
         render(false);
+    }
+    private void acceptInvite(Intent intent){
+        if(intent==null||!Intent.ACTION_VIEW.equals(intent.getAction()))return;
+        android.net.Uri uri=intent.getData();
+        if(uri==null||!"peladaleague".equals(uri.getScheme())||!"convite".equals(uri.getHost()))return;
+        String code=uri.getQueryParameter("code");
+        if(code!=null&&code.matches("[a-fA-F0-9]{32}")){
+            onlineState.code=code.toLowerCase(Locale.ROOT);
+            onlineState.preview=null;route="online";
+        }
+    }
+    @Override protected void onNewIntent(Intent intent){
+        super.onNewIntent(intent);setIntent(intent);acceptInvite(intent);render(false);
     }
     @Override protected void onSaveInstanceState(Bundle out){rememberPosition();out.putString("route",route);out.putLong("group",groupId);out.putLong("game",gameId);out.putInt("groupTab",groupTab);out.putInt("drawTab",drawTab);out.putInt("matchTab",matchTab);out.putInt("leagueTab",leagueTab);out.putInt("profileTab",profileTab);out.putInt("teamCount",teamCount);out.putBoolean("balanced",balanced);out.putString("fingerprint",selectionFingerprint);out.putLongArray("selected",selected.stream().mapToLong(Long::longValue).toArray());out.putStringArrayList("history",new ArrayList<>(history));Bundle pos=new Bundle();for(Map.Entry<String,Integer> e:positions.entrySet())pos.putInt(e.getKey(),e.getValue());out.putBundle("positions",pos);super.onSaveInstanceState(out);}
     @Override protected void onDestroy(){worker.shutdownNow();finance.close();db.close();super.onDestroy();}
@@ -60,6 +75,7 @@ public class MainActivity extends Activity {
             case "profile":new ProfileScreen(this).render();break;
             case "finance":new FinanceScreen(this).render();break;
             case "account":new AccountScreen(this).render();break;
+            case "online":new OnlineEventsScreen(this).render();break;
             default:route="home";new HomeScreen(this).render();
         }
         if(Arrays.asList("home","groups","league","profile").contains(route))bottom();
