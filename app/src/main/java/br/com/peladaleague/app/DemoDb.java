@@ -29,7 +29,7 @@ public final class DemoDb extends SQLiteOpenHelper {
         public Card(long id,long gameId,long playerId,String name,int team,String color,int minute){this.id=id;this.gameId=gameId;this.playerId=playerId;this.name=name;this.team=team;this.color=color;this.minute=minute;}
     }
     public static final String CONFIRMED="CONFIRMED",WAITLIST="WAITLIST",DECLINED="DECLINED",PENDING="PENDING";
-    private static final int VERSION=4;
+    private static final int VERSION=5;
     private final SecureRandom rng=new SecureRandom();
     public DemoDb(Context c){super(c,"pelada_league_demo.db",null,VERSION);}
     @Override public void onCreate(SQLiteDatabase d){
@@ -53,6 +53,7 @@ public final class DemoDb extends SQLiteOpenHelper {
         long past2=insertGame(d,group,"Time Preto","Time Amarelo","DEMO_APPROVED","03/11 • 20:00");
         seedGoals(d,past2,new int[][]{{2,0,10},{6,0,15},{1,1,22},{3,1,38}});
         insertGame(d,group,"Time Amarelo","Time Preto","DRAFT","Jogo de exemplo • 20:00");
+        createV5(d);
     }
     private static void createExtras(SQLiteDatabase d){
         d.execSQL("CREATE TABLE IF NOT EXISTS sessions(id INTEGER PRIMARY KEY AUTOINCREMENT,group_id INTEGER NOT NULL,created_at INTEGER NOT NULL,active INTEGER NOT NULL DEFAULT 1)");
@@ -74,6 +75,7 @@ public final class DemoDb extends SQLiteOpenHelper {
         }
         if(old<3)createV3(d);
         if(old<4)createV4(d);
+        if(old<5)createV5(d);
     }
     private static void createV3(SQLiteDatabase d){
         d.execSQL("CREATE TABLE IF NOT EXISTS saved_draws(session_id INTEGER PRIMARY KEY, fingerprint TEXT NOT NULL, squads TEXT NOT NULL)");
@@ -84,6 +86,91 @@ public final class DemoDb extends SQLiteOpenHelper {
         d.execSQL("INSERT OR IGNORE INTO match_appearances(game_id,player_id,team) SELECT game_id,player_id,team FROM game_roster");
         d.execSQL("CREATE TABLE IF NOT EXISTS substitutions(id INTEGER PRIMARY KEY AUTOINCREMENT,game_id INTEGER NOT NULL,team INTEGER NOT NULL,out_player INTEGER NOT NULL,in_player INTEGER NOT NULL,minute INTEGER NOT NULL,created_at INTEGER NOT NULL)");
         d.execSQL("CREATE INDEX IF NOT EXISTS idx_subs_game ON substitutions(game_id,id)");
+    }
+    /** Season association is on the same SQLite connection as games, so a failed match never leaks a season entry. */
+    private static void createV5(SQLiteDatabase d){
+        d.execSQL("CREATE TABLE IF NOT EXISTS seasons(id INTEGER PRIMARY KEY AUTOINCREMENT,group_id INTEGER NOT NULL,name TEXT NOT NULL,opened_at INTEGER NOT NULL,closed_at INTEGER,active INTEGER NOT NULL DEFAULT 1 CHECK(active IN (0,1)))");
+        d.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS idx_one_active_season ON seasons(group_id) WHERE active=1");
+        d.execSQL("CREATE TABLE IF NOT EXISTS season_games(season_id INTEGER NOT NULL,game_id INTEGER NOT NULL UNIQUE,PRIMARY KEY(season_id,game_id))");
+        try(Cursor c=d.rawQuery("SELECT id FROM groups ORDER BY id",null)){
+            while(c.moveToNext()){
+                long group=c.getLong(0);
+                long season=createInitialSeason(d,group);
+                d.execSQL("INSERT OR IGNORE INTO season_games(season_id,game_id) SELECT ?,id FROM games WHERE group_id=?",new Object[]{season,group});
+            }
+        }
+    }
+    private static long createInitialSeason(SQLiteDatabase d,long group){
+        try(Cursor c=d.rawQuery("SELECT id FROM seasons WHERE group_id=? AND active=1 LIMIT 1",new String[]{""+group})){
+            if(c.moveToFirst())return c.getLong(0);
+        }
+        ContentValues v=new ContentValues();
+        v.put("group_id",group);v.put("name","Temporada inicial");v.put("opened_at",System.currentTimeMillis());v.put("active",1);
+        return d.insertOrThrow("seasons",null,v);
+    }
+    private static void assignGameToCurrentSeason(SQLiteDatabase d,long group,long game){
+        long season=createInitialSeason(d,group);
+        ContentValues v=new ContentValues();v.put("season_id",season);v.put("game_id",game);
+        d.insertOrThrow("season_games",null,v);
+    }
+    public static final class Season {
+        public final long id,groupId,openedAt;public final String name;public final boolean active;
+        Season(long id,long groupId,String name,long openedAt,boolean active){
+            this.id=id;this.groupId=groupId;this.name=name;this.openedAt=openedAt;this.active=active;
+        }
+    }
+    public static final class Award {
+        public final String category,name;public final int value;
+        Award(String category,String name,int value){this.category=category;this.name=name;this.value=value;}
+    }
+    public List<Season> seasons(long group){
+        List<Season> out=new ArrayList<>();
+        try(Cursor c=getReadableDatabase().rawQuery("SELECT id,group_id,name,opened_at,active FROM seasons WHERE group_id=? ORDER BY id DESC",new String[]{""+group})){
+            while(c.moveToNext())out.add(new Season(c.getLong(0),c.getLong(1),c.getString(2),c.getLong(3),c.getInt(4)==1));
+        }
+        return out;
+    }
+    public Season activeSeason(long group){
+        for(Season season:seasons(group))if(season.active)return season;
+        throw new IllegalStateException("Esta pelada não tem temporada ativa.");
+    }
+    public long beginSeason(long group,String name){
+        if(name==null||name.trim().length()<3||name.trim().length()>80)
+            throw new IllegalArgumentException("O nome da temporada deve ter entre 3 e 80 caracteres.");
+        SQLiteDatabase d=getWritableDatabase();d.beginTransaction();
+        try{
+            if(count("SELECT COUNT(*) FROM groups WHERE id=?",new String[]{""+group})==0)
+                throw new IllegalArgumentException("Pelada inexistente.");
+            ContentValues closed=new ContentValues();closed.put("active",0);closed.put("closed_at",System.currentTimeMillis());
+            d.update("seasons",closed,"group_id=? AND active=1",new String[]{""+group});
+            ContentValues next=new ContentValues();next.put("group_id",group);next.put("name",name.trim());
+            next.put("opened_at",System.currentTimeMillis());next.put("active",1);
+            long season=d.insertOrThrow("seasons",null,next);
+            d.setTransactionSuccessful();return season;
+        }finally{d.endTransaction();}
+    }
+    public List<Game> seasonGames(long group,long season){
+        if(count("SELECT COUNT(*) FROM seasons WHERE id=? AND group_id=?",new String[]{""+season,""+group})==0)
+            throw new IllegalArgumentException("Temporada não pertence à pelada.");
+        List<Game> out=new ArrayList<>();
+        try(Cursor c=getReadableDatabase().rawQuery("SELECT m.id,m.group_id,m.team_a,m.team_b,m.status,m.day FROM games m JOIN season_games sg ON sg.game_id=m.id WHERE sg.season_id=? AND m.group_id=? ORDER BY m.id DESC",new String[]{""+season,""+group})){
+            while(c.moveToNext())out.add(readGame(c));
+        }
+        return out;
+    }
+    public List<Award> seasonAwards(long group,long season){
+        // Only approved local game reports can grant a performance award.
+        seasonGames(group,season); // Validates group ownership.
+        List<Award> awards=new ArrayList<>();
+        addAward(awards,"Artilharia","SELECT p.name,COUNT(*) result FROM goals g JOIN games m ON m.id=g.game_id JOIN season_games sg ON sg.game_id=m.id JOIN players p ON p.id=g.player_id WHERE sg.season_id=? AND m.group_id=? AND m.status='DEMO_APPROVED' AND g.own_goal=0 GROUP BY p.id ORDER BY result DESC,p.name LIMIT 1",season,group);
+        addAward(awards,"Assistências","SELECT p.name,COUNT(*) result FROM goals g JOIN games m ON m.id=g.game_id JOIN season_games sg ON sg.game_id=m.id JOIN players p ON p.id=g.assist_id WHERE sg.season_id=? AND m.group_id=? AND m.status='DEMO_APPROVED' AND g.assist_id>0 GROUP BY p.id ORDER BY result DESC,p.name LIMIT 1",season,group);
+        addAward(awards,"Mais partidas","SELECT p.name,COUNT(DISTINCT a.game_id) result FROM match_appearances a JOIN games m ON m.id=a.game_id JOIN season_games sg ON sg.game_id=m.id JOIN players p ON p.id=a.player_id WHERE sg.season_id=? AND m.group_id=? AND m.status='DEMO_APPROVED' GROUP BY p.id ORDER BY result DESC,p.name LIMIT 1",season,group);
+        return awards;
+    }
+    private void addAward(List<Award> awards,String category,String sql,long season,long group){
+        try(Cursor c=getReadableDatabase().rawQuery(sql,new String[]{""+season,""+group})){
+            if(c.moveToFirst()&&c.getInt(1)>0)awards.add(new Award(category,c.getString(0),c.getInt(1)));
+        }
     }
     private static long startSession(SQLiteDatabase d,long group){ContentValues v=new ContentValues();v.put("group_id",group);v.put("created_at",System.currentTimeMillis());v.put("active",1);return d.insertOrThrow("sessions",null,v);}
     private static void seedGoals(SQLiteDatabase d,long game,int[][] data){for(int[] x:data){ContentValues g=new ContentValues();g.put("game_id",game);g.put("player_id",x[0]);g.put("team",x[1]);g.put("minute",x[2]);d.insert("goals",null,g);}}
@@ -96,7 +183,7 @@ public final class DemoDb extends SQLiteOpenHelper {
     public long addPlayer(String name,String pos){return addPlayer(name,pos,1);}
     public void setPlayerSkill(long id,int skill){if(skill<1||skill>100)throw new IllegalArgumentException("Avaliação entre 1 e 100");ContentValues v=new ContentValues();v.put("skill",skill);getWritableDatabase().update("players",v,"id=?",new String[]{""+id});}
     public int groupCount(){return count("SELECT COUNT(*) FROM groups",null);}
-    public long addGroup(String name,String location,String schedule){SQLiteDatabase d=getWritableDatabase();ContentValues v=new ContentValues();v.put("name",name);v.put("location",location);v.put("schedule",schedule);long id=d.insertOrThrow("groups",null,v);startSession(d,id);return id;}
+    public long addGroup(String name,String location,String schedule){SQLiteDatabase d=getWritableDatabase();ContentValues v=new ContentValues();v.put("name",name);v.put("location",location);v.put("schedule",schedule);long id=d.insertOrThrow("groups",null,v);startSession(d,id);createInitialSeason(d,id);return id;}
     public List<String[]> groups(){List<String[]> o=new ArrayList<>();try(Cursor c=getReadableDatabase().rawQuery("SELECT id,name,location,schedule FROM groups ORDER BY id DESC",null)){while(c.moveToNext())o.add(new String[]{c.getString(0),c.getString(1),c.getString(2),c.getString(3)});}return o;}
     public String[] group(long id){try(Cursor c=getReadableDatabase().rawQuery("SELECT name,location,schedule FROM groups WHERE id=?",new String[]{""+id})){if(c.moveToFirst())return new String[]{c.getString(0),c.getString(1),c.getString(2)};}return new String[]{"Minha pelada","Campo","20h"};}
     public long activeSession(long group){try(Cursor c=getReadableDatabase().rawQuery("SELECT id FROM sessions WHERE group_id=? AND active=1 LIMIT 1",new String[]{""+group})){if(c.moveToFirst())return c.getLong(0);}throw new IllegalStateException("Grupo sem sessão ativa");}
@@ -129,14 +216,14 @@ public final class DemoDb extends SQLiteOpenHelper {
     }
     private static void upsertAttendance(SQLiteDatabase d,long session,long player,String status){ContentValues v=new ContentValues();v.put("session_id",session);v.put("player_id",player);v.put("status",status);v.put("updated_at",System.currentTimeMillis());d.insertWithOnConflict("attendance",null,v,SQLiteDatabase.CONFLICT_REPLACE);}
     private static void promoteWaitlist(SQLiteDatabase d,long session){try(Cursor c=d.rawQuery("SELECT player_id FROM attendance WHERE session_id=? AND status='WAITLIST' ORDER BY updated_at,player_id LIMIT 1",new String[]{""+session})){if(c.moveToFirst())upsertAttendance(d,session,c.getLong(0),CONFIRMED);}}
-    public long addGame(long group,String a,String b){return insertGame(getWritableDatabase(),group,a,b,"DRAFT","Hoje • 20:00");}
+    public long addGame(long group,String a,String b){SQLiteDatabase d=getWritableDatabase();d.beginTransaction();try{long id=insertGame(d,group,a,b,"DRAFT","Hoje • 20:00");assignGameToCurrentSeason(d,group,id);d.setTransactionSuccessful();return id;}finally{d.endTransaction();}}
     public long addGameWithLineup(long group,String a,String b,List<Player> teamA,List<Player> teamB){
         if(teamA.size()<2||teamB.size()<2)throw new IllegalArgumentException("Cada time precisa de ao menos 2 jogadores");
         Set<Long> present=new HashSet<>();for(Player p:confirmedPlayers(group))present.add(p.id);
         Set<Long> chosen=new HashSet<>();for(Player p:teamA)if(!present.contains(p.id)||!chosen.add(p.id))throw new IllegalArgumentException("Escalação contém ausente ou duplicado");
         for(Player p:teamB)if(!present.contains(p.id)||!chosen.add(p.id))throw new IllegalArgumentException("Escalação contém ausente ou duplicado");
         SQLiteDatabase d=getWritableDatabase();d.beginTransaction();try{
-            long id=insertGame(d,group,a,b,"DRAFT","Hoje • 20:00");ContentValues link=new ContentValues();link.put("session_id",activeSession(group));d.update("games",link,"id=?",new String[]{""+id});
+            long id=insertGame(d,group,a,b,"DRAFT","Hoje • 20:00");assignGameToCurrentSeason(d,group,id);ContentValues link=new ContentValues();link.put("session_id",activeSession(group));d.update("games",link,"id=?",new String[]{""+id});
             for(Player p:teamA)insertLineup(d,id,p.id,0);for(Player p:teamB)insertLineup(d,id,p.id,1);
             d.setTransactionSuccessful();return id;
         }finally{d.endTransaction();}
