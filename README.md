@@ -1,4 +1,4 @@
-# Pelada League · 0.4.0-alpha
+# Pelada League · 0.4.1-alpha
 
 Aplicativo Android nativo para organizar peladas, confirmar presenças, sortear equipes e registrar partidas. Esta atualização reconstrói as oito telas da direção visual preto/dourado e mantém o banco SQLite da versão anterior.
 
@@ -40,6 +40,15 @@ sh scripts/test-core.sh
 
 APK: `app/build/outputs/apk/debug/app-debug.apk`.
 No GitHub: **Actions → Android 0.4 · build and device tests → artefato PeladaLeague-0.4-debug**.
+
+## Interface 0.4.1 e primeiro uso
+
+- Tour de oito etapas contextualizadas com destaque nos controles reais, botão Pular, Voltar, Próximo e Concluir.
+- O tour aparece uma vez após a entrada na tela inicial. Para rever: **Informações → Ver tutorial**.
+- Animação de luz dourada circulante nos botões principais e respiração discreta no escudo da página inicial; efeitos cancelados ao sair da tela e desativados se o Android desabilitar animações.
+- Se houver menos de quatro jogadores confirmados, a tela inicial oferece **Preparar a partida** para levar diretamente às presenças.
+- Atualize normalmente pelo Git e use o botão de compilação do Code on the Go; versão de pacote 5.
+- Estas mudanças NÃO implementam login ou sincronização online. Consulte [roteiro para produto real](docs/ROADMAP_PRODUTO_REAL.md).
 
 ## Funcionalidades desta versão
 
