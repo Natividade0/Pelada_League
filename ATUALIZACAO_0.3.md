@@ -21,4 +21,4 @@ sh apply-v03.sh
 Depois faça a sincronização Gradle e a compilação. Este repositório mantém o código de atualização compactado em `payload/v03/part00.txt`. O script confere o SHA-256 antes de extrair.
 
 ## Limites da alfa
-Ainda não há login remoto, fotos de usuários, notificações push nem validação segura por capitães. As estatísticas e códigos são demonstração local. Este pacote foi verificado por testes das regras e por instalação local sobre a v0.2, **mas o APK ainda precisa ser compilado e testado no Android**. A interface é uma implementação nativa inspirada na referência, não uma reprodução perfeita de cada pixel.
+Ainda não há login remoto, fotos de usuários, notificações push nem validação segura por capitães. As estatísticas e códigos são demonstração local. Este pacote foi verificado por testes das regras e por instalação local sobre a v0.2, **e o APK debug foi compilado com sucesso pelo GitHub Actions em 13/11/2026; falta validar o visual e o fluxo no celular**. A interface é uma implementação nativa inspirada na referência, não uma reprodução perfeita de cada pixel.
