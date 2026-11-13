@@ -19,7 +19,7 @@ final class OnlineEventsScreen extends Screen {
         JSONArray groups=new JSONArray(),events=new JSONArray();
         JSONObject preview,finance;
         String code="",lastError="";
-        boolean loading=false,loaded=false;
+        boolean loading=false,loaded=false,previewLoading=false;
     }
     private final State state;
     OnlineEventsScreen(MainActivity a){super(a);state=a.onlineState;}
@@ -39,14 +39,14 @@ final class OnlineEventsScreen extends Screen {
             return;
         }
         if(!state.loaded&&!state.loading)a.shell.post(this::load);
-        if(!state.code.isEmpty()&&state.preview==null&&!state.loading)a.shell.post(()->open(state.code));
+        if(!state.code.isEmpty()&&state.preview==null&&!state.previewLoading)a.shell.post(()->open(state.code));
         LinearLayout intro=card();
         intro.addView(text("Peladas compartilhadas",17,Ui.GOLD,true));
         Ui.put(intro,text("Organize um evento, envie um convite e receba confirmações de pessoas diferentes. As inscrições ficam no servidor.",12,Ui.MUTED,false),6);
         add(intro);gap(12);
 
         if(!state.code.isEmpty()&&state.preview!=null)preview();
-        else if(!state.code.isEmpty()&&state.loading)sub("Carregando convite…");
+        else if(!state.code.isEmpty()&&state.previewLoading)sub("Carregando convite…");
 
         if(!state.lastError.isEmpty())sub("Aviso: "+state.lastError);
         if(state.loading)sub("Consultando eventos online…");
@@ -107,7 +107,8 @@ final class OnlineEventsScreen extends Screen {
             a.toast("O convite precisa ter um código válido de 32 caracteres.");return;
         }
         state.code=token.toLowerCase(Locale.ROOT);state.preview=null;state.finance=null;
-        state.loading=true;
+        if(state.previewLoading)return;
+        state.previewLoading=true;
         JSONObject body=new JSONObject();
         try{body.put("p_code",state.code);}catch(Exception ignored){}
         a.auth.runOnline(()->{
@@ -115,7 +116,7 @@ final class OnlineEventsScreen extends Screen {
             a.runOnUiThread(()->state.preview=preview);
             return "Convite carregado.";
         },(ok,msg)->{
-            state.loading=false;
+            state.previewLoading=false;
             if(!ok){state.lastError=msg;state.code="";}
             else state.lastError="";
             if(a.route.equals("online"))a.refresh();
