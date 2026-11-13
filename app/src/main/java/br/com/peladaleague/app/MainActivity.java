@@ -29,6 +29,10 @@ public class MainActivity extends Activity {
         if(state!=null){groupId=state.getLong("group",groupId);gameId=state.getLong("game");route=state.getString("route","home");groupTab=state.getInt("groupTab");drawTab=state.getInt("drawTab");matchTab=state.getInt("matchTab");leagueTab=state.getInt("leagueTab");profileTab=state.getInt("profileTab");teamCount=state.getInt("teamCount",2);balanced=state.getBoolean("balanced",true);selectionFingerprint=state.getString("fingerprint","");long[] ids=state.getLongArray("selected");if(ids!=null)for(long id:ids)selected.add(id);ArrayList<String> h=state.getStringArrayList("history");if(h!=null)history.addAll(h);Bundle pos=state.getBundle("positions");if(pos!=null)for(String k:pos.keySet())positions.put(k,pos.getInt(k));}
         else route=pref.getBoolean("entered",false)?"home":"welcome";
         acceptInvite(getIntent());
+        if(onlineState.code.isEmpty()){
+            String pending=getPreferences(0).getString("pending_invite","");
+            if(pending.matches("[a-fA-F0-9]{32}")){onlineState.code=pending;route="online";}
+        }
         getWindow().setStatusBarColor(Ui.BG);getWindow().setNavigationBarColor(Ui.BG);
         if(android.os.Build.VERSION.SDK_INT>=33)getOnBackInvokedDispatcher().registerOnBackInvokedCallback(android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT,this::back);
         render(false);
@@ -41,6 +45,7 @@ public class MainActivity extends Activity {
         if(code!=null&&code.matches("[a-fA-F0-9]{32}")){
             onlineState.code=code.toLowerCase(Locale.ROOT);
             onlineState.preview=null;route="online";
+            getPreferences(0).edit().putString("pending_invite",onlineState.code).apply();
         }
     }
     @Override protected void onNewIntent(Intent intent){
