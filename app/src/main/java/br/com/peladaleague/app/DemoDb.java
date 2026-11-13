@@ -158,6 +158,18 @@ public final class DemoDb extends SQLiteOpenHelper {
         }
         return out;
     }
+    public Map<String,Integer> seasonScorers(long group,long season){
+        seasonGames(group,season);
+        Map<String,Integer> results=new LinkedHashMap<>();
+        String query="SELECT p.name,COUNT(*) goals FROM goals g JOIN games m ON m.id=g.game_id " +
+            "JOIN season_games sg ON sg.game_id=m.id JOIN players p ON p.id=g.player_id "+
+            "WHERE sg.season_id=? AND m.group_id=? AND m.status='DEMO_APPROVED' AND g.own_goal=0 " +
+            "GROUP BY p.id ORDER BY goals DESC,p.name LIMIT 30";
+        try(Cursor c=getReadableDatabase().rawQuery(query,new String[]{""+season,""+group})){
+            while(c.moveToNext())results.put(c.getString(0),c.getInt(1));
+        }
+        return results;
+    }
     public List<Award> seasonAwards(long group,long season){
         // Only approved local game reports can grant a performance award.
         seasonGames(group,season); // Validates group ownership.
