@@ -17,9 +17,12 @@ public class MainActivity extends Activity {
     final Set<Long> selected=new LinkedHashSet<>(); String selectionFingerprint="";
     final Deque<String> history=new ArrayDeque<>(); final Map<String,Integer> positions=new HashMap<>();
     final ExecutorService worker=Executors.newSingleThreadExecutor();
+    final Map<String,View> tutorialTargets=new HashMap<>();
+    Onboarding onboarding;
+    <T extends View> T mark(String name,T v){tutorialTargets.put(name,v);return v;}
     String role="Organizador"; int shirtNumber=0;
     @Override public void onCreate(Bundle state){
-        super.onCreate(state);db=new DemoDb(this);
+        super.onCreate(state);db=new DemoDb(this);onboarding=new Onboarding(this);
         android.content.SharedPreferences pref=getPreferences(0);
         groupId=pref.getLong("group",1);playerId=pref.getLong("player",1);shirtNumber=pref.getInt("shirt",0);role=pref.getString("role","Organizador");
         if(state!=null){groupId=state.getLong("group",groupId);gameId=state.getLong("game");route=state.getString("route","home");groupTab=state.getInt("groupTab");drawTab=state.getInt("drawTab");matchTab=state.getInt("matchTab");leagueTab=state.getInt("leagueTab");profileTab=state.getInt("profileTab");teamCount=state.getInt("teamCount",2);balanced=state.getBoolean("balanced",true);selectionFingerprint=state.getString("fingerprint","");long[] ids=state.getLongArray("selected");if(ids!=null)for(long id:ids)selected.add(id);ArrayList<String> h=state.getStringArrayList("history");if(h!=null)history.addAll(h);Bundle pos=state.getBundle("positions");if(pos!=null)for(String k:pos.keySet())positions.put(k,pos.getInt(k));}
@@ -36,10 +39,11 @@ public class MainActivity extends Activity {
     void refresh(){rememberPosition();render(false);}
     void selectGroup(long id){groupId=id;groupTab=0;selected.clear();selectionFingerprint="";getPreferences(0).edit().putLong("group",id).apply();open("group");}
     void openGame(DemoDb.Game game){gameId=game.id;groupId=game.groupId;matchTab=0;open("PENDING".equals(game.status)?"approve":"match");}
-    void back(){if(!history.isEmpty()){rememberPosition();route=history.pop();render(true);}else if(!route.equals("home")&&!route.equals("welcome")){route="home";render(true);}else finish();}
+    void back(){if(onboarding!=null&&onboarding.active()){onboarding.skip();return;}if(!history.isEmpty()){rememberPosition();route=history.pop();render(true);}else if(!route.equals("home")&&!route.equals("welcome")){route="home";render(true);}else finish();}
     @Override public void onBackPressed(){back();}
     void render(boolean animate){
         if(isFinishing()||isDestroyed())return;
+        tutorialTargets.clear();
         shell=Ui.col(this);shell.setBackground(new ArenaBackdrop());
         shell.setOnApplyWindowInsetsListener((v,insets)->{if(android.os.Build.VERSION.SDK_INT>=30){android.graphics.Insets bars=insets.getInsets(WindowInsets.Type.systemBars()|WindowInsets.Type.displayCutout()|WindowInsets.Type.ime());v.setPadding(bars.left,bars.top,bars.right,bars.bottom);}else v.setPadding(insets.getSystemWindowInsetLeft(),insets.getSystemWindowInsetTop(),insets.getSystemWindowInsetRight(),insets.getSystemWindowInsetBottom());return insets;});
         setContentView(shell);shell.requestApplyInsets();
@@ -59,6 +63,7 @@ public class MainActivity extends Activity {
         if(Arrays.asList("home","groups","league","profile").contains(route))bottom();
         int y=positions.getOrDefault(route+":"+groupId,0);scroll.post(()->{if(scroll!=null)scroll.scrollTo(0,y);});
         if(animate)Motion.arrive(page,true);
+        if(onboarding!=null)onboarding.afterRender();
     }
     /** Fixed navigation dock: every icon and label shares the same centered tab column. */
     void bottom(){
@@ -102,7 +107,14 @@ public class MainActivity extends Activity {
     void toast(String text){Toast.makeText(this,text,Toast.LENGTH_SHORT).show();}
     void confirm(String title,String message,Runnable yes){new AlertDialog.Builder(this).setTitle(title).setMessage(message).setNegativeButton("Cancelar",null).setPositiveButton("Confirmar",(d,w)->yes.run()).show();}
     void safely(Runnable r){try{r.run();}catch(IllegalArgumentException|IllegalStateException e){toast(e.getMessage()==null?"Não foi possível concluir. Confira os dados.":e.getMessage());}}
-    void info(){new AlertDialog.Builder(this).setTitle("Pelada League · 0.4").setMessage("Demonstração local funcional. Os dados ficam neste aparelho.\n\nPerfis e permissões são uma simulação: não há contas autenticadas, sincronização ou resultados oficiais online. Os códigos de 4 dígitos testam apenas o fluxo de aprovação.\n\nModo atual: "+role+". Nenhuma compra ou assinatura é necessária.").setPositiveButton("Entendi",null).setNeutralButton("Perfil de teste",(d,w)->chooseRole()).show();}
+    void info(){new AlertDialog.Builder(this).setTitle("Pelada League · 0.4")
+        .setMessage("Versão local em desenvolvimento. Os dados ficam neste aparelho.\\n\\n"
+            +"Ainda não existem contas autenticadas, sincronização entre celulares ou aprovação oficial. "
+            +"Os códigos de 4 dígitos testam apenas o fluxo local.\\n\\n"
+            +"Modo atual: "+role+". Nenhuma compra ou assinatura é necessária.")
+        .setPositiveButton("Entendi",null)
+        .setNeutralButton("Ver tutorial",(d,w)->{tab("home");onboarding.start();})
+        .setNegativeButton("Perfil de teste",(d,w)->chooseRole()).show();}
     void chooseRole(){String[] roles={"Jogador","Capitão","Mesário / árbitro","Organizador","Administrador"};new AlertDialog.Builder(this).setTitle("Simular permissões locais").setItems(roles,(d,i)->{role=roles[i];getPreferences(0).edit().putString("role",role).apply();refresh();}).setNegativeButton("Voltar",null).show();}
     String status(String s){switch(s){case DemoDb.CONFIRMED:return "Confirmado";case DemoDb.WAITLIST:return "Na espera";case DemoDb.DECLINED:return "Ausente";default:return "Pendente";}}
     String teamName(int i){return new String[]{"Time Amarelo","Time Preto","Time Branco","Time Cinza"}[i];}
