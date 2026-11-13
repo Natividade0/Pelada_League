@@ -248,6 +248,12 @@ final class OnlineEventsScreen extends Screen {
         EditText cost=field(form,"Custo do campo (R$)","250,00");cost.setInputType(InputType.TYPE_CLASS_NUMBER|InputType.TYPE_NUMBER_FLAG_DECIMAL);
         CheckBox keeper=new CheckBox(a);keeper.setText("Goleiros isentos de contribuição");keeper.setTextColor(Ui.WHITE);keeper.setChecked(true);Ui.put(form,keeper,12);
         EditText pix=field(form,"Chave Pix (opcional)","");
+        Ui.put(form,text("Repetição semanal",12,Ui.WHITE,true),12);
+        Spinner recurrence=new Spinner(a);
+        recurrence.setAdapter(new ArrayAdapter<>(a,android.R.layout.simple_spinner_dropdown_item,
+            new String[]{"Somente esta partida","4 semanas (4 eventos)","8 semanas (8 eventos)"}));
+        Ui.put(form,recurrence,6);
+        Ui.put(form,text("Cada semana terá uma lista de presença e um link de convite próprios.",11,Ui.MUTED,false),7);
         ScrollView sc=new ScrollView(a);sc.addView(form);
         AlertDialog d=new AlertDialog.Builder(a).setTitle("Criar evento online").setView(sc)
             .setNegativeButton("Cancelar",null).setPositiveButton("Criar evento",null).create();
@@ -267,12 +273,16 @@ final class OnlineEventsScreen extends Screen {
                 body.put("p_field_cost_cents",FinanceScreen.cents(cost.getText().toString()));
                 body.put("p_keeper_exempt",keeper.isChecked());
                 body.put("p_pix_key",pix.getText().toString().trim());
+                final int weeks=recurrence.getSelectedItemPosition()==0?1:
+                    recurrence.getSelectedItemPosition()==1?4:8;
+                if(weeks>1)body.put("p_weeks",weeks);
                 d.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
                 a.auth.runOnline(()->{
-                    JSONObject result=a.auth.authorized("POST","/rest/v1/rpc/create_event",body);
+                    String route=weeks==1?"create_event":"create_weekly_events";
+                    JSONObject result=a.auth.authorized("POST","/rest/v1/rpc/"+route,body);
                     final String code=result.getString("code");
                     a.runOnUiThread(()->state.code=code);
-                    return "Evento criado no servidor.";
+                    return weeks==1?"Evento criado no servidor.":weeks+" eventos semanais criados no servidor.";
                 },(ok,msg)->{
                     a.toast(msg);
                     if(ok){d.dismiss();load();a.shell.postDelayed(()->open(state.code),250);}
