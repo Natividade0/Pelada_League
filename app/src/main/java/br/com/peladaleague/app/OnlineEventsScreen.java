@@ -136,7 +136,7 @@ final class OnlineEventsScreen extends Screen {
             button("Vou jogar · confirmar presença",true,()->respond(true));
             button("Não vou jogar",false,()->respond(false));
         }else sub("As inscrições deste evento estão encerradas.");
-        TextView close=Ui.chip(a,"Fechar convite",false,()->{state.code="";state.preview=null;a.refresh();});add(close);gap(14);
+        TextView close=Ui.chip(a,"Fechar convite",false,()->{state.code="";state.preview=null;a.getPreferences(0).edit().remove("pending_invite").apply();a.refresh();});add(close);gap(14);
     }
     private void respond(boolean going){
         if(!going){sendResponse(false,"LIN");return;}
