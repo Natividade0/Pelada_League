@@ -14,8 +14,35 @@ import java.util.*;
 public final class UiTest extends InstrumentationTestCase {
     private MainActivity a;
     private void ui(Runnable r){getInstrumentation().runOnMainSync(r);getInstrumentation().waitForIdleSync();}
-    private View text(View v,String label){if(v instanceof TextView&&label.equals(((TextView)v).getText().toString()))return v;if(v instanceof ViewGroup){ViewGroup g=(ViewGroup)v;for(int i=0;i<g.getChildCount();i++){View found=text(g.getChildAt(i),label);if(found!=null)return found;}}return null;}
-    private void click(String label){ui(()->{View v=text(a.getWindow().getDecorView(),label);assertNotNull("Missing action: "+label,v);while(v!=null&&!v.isClickable())v=(View)v.getParent();assertNotNull(v);assertTrue(v.performClick());});}
+    /** Prefer a clickable exact text control; otherwise find a clickable ancestor. */
+    private View action(View v,String label,boolean direct){
+        if(v instanceof TextView && label.equals(((TextView)v).getText().toString())){
+            if(v.isClickable())return v;
+            if(!direct){
+                ViewParent parent=v.getParent();
+                while(parent instanceof View){
+                    View candidate=(View)parent;
+                    if(candidate.isClickable())return candidate;
+                    parent=candidate.getParent();
+                }
+            }
+        }
+        if(v instanceof ViewGroup){
+            ViewGroup g=(ViewGroup)v;
+            for(int i=0;i<g.getChildCount();i++){
+                View found=action(g.getChildAt(i),label,direct);
+                if(found!=null)return found;
+            }
+        }
+        return null;
+    }
+    private void click(String label){ui(()->{
+        View root=a.getWindow().getDecorView();
+        View found=action(root,label,true);
+        if(found==null)found=action(root,label,false);
+        assertNotNull("Missing clickable action: "+label,found);
+        assertTrue("Action did not respond: "+label,found.performClick());
+    });}
     private void screenshot(String name)throws Exception{getInstrumentation().waitForIdleSync();SystemClock.sleep(900);Bitmap b=getInstrumentation().getUiAutomation().takeScreenshot();assertNotNull("Android screenshot",b);File folder=new File(a.getFilesDir(),"qa");folder.mkdirs();try(FileOutputStream out=new FileOutputStream(new File(folder,name+".png"))){b.compress(Bitmap.CompressFormat.PNG,100,out);}b.recycle();}
     private void top(){ui(()->{if(a.scroll!=null)a.scroll.scrollTo(0,0);});}
     public void testEightScreensAndNavigation()throws Exception{
