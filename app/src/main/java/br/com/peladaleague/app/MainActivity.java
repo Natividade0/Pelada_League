@@ -60,12 +60,39 @@ public class MainActivity extends Activity {
         int y=positions.getOrDefault(route+":"+groupId,0);scroll.post(()->{if(scroll!=null)scroll.scrollTo(0,y);});
         if(animate)Motion.arrive(page,true);
     }
+    /** Fixed navigation dock: every icon and label shares the same centered tab column. */
     void bottom(){
-        LinearLayout bar=Ui.row(this);bar.setBackground(Ui.round(this,0xFF121517,18,0xFF3C392B));bar.setPadding(Ui.dp(this,4),Ui.dp(this,5),Ui.dp(this,4),Ui.dp(this,3));
-        String[] routes={"home","groups","league","profile"},labels={"Início","Peladas","Ligas","Perfil"},icons={"home","users","trophy","profile"};
-        for(int i=0;i<routes.length;i++){String target=routes[i];boolean active=route.equals(target);LinearLayout item=Ui.col(this);item.setGravity(Gravity.CENTER);item.setMinimumHeight(Ui.dp(this,54));
-            item.addView(new Ui.Icon(this,icons[i],active?Ui.GOLD:Ui.MUTED),Ui.lp(this,25,25));TextView label=Ui.t(this,labels[i],11,active?Ui.GOLD:Ui.MUTED,active);Ui.space(item,4);item.addView(label);item.setContentDescription(labels[i]+(active?", selecionado":""));Ui.tappable(item,()->tab(target));bar.addView(item,new LinearLayout.LayoutParams(0,-2,1));}
-        LinearLayout.LayoutParams p=Ui.lp(this,-1,-2);p.setMargins(Ui.dp(this,10),0,Ui.dp(this,10),Ui.dp(this,5));shell.addView(bar,p);
+        LinearLayout bar=Ui.row(this);
+        bar.setGravity(Gravity.CENTER_VERTICAL);
+        bar.setBackground(Ui.round(this,0xFF121517,18,0xFF3C392B));
+        bar.setPadding(Ui.dp(this,6),Ui.dp(this,6),Ui.dp(this,6),Ui.dp(this,6));
+        String[] routes={"home","groups","league","profile"};
+        String[] labels={"Início","Peladas","Ligas","Perfil"};
+        String[] icons={"home","users","trophy","profile"};
+        for(int i=0;i<routes.length;i++){
+            final String target=routes[i];
+            boolean active=route.equals(target);
+            LinearLayout item=Ui.col(this);
+            item.setGravity(Gravity.CENTER);
+            item.setMinimumHeight(Ui.dp(this,62));
+            item.setPadding(Ui.dp(this,2),Ui.dp(this,5),Ui.dp(this,2),Ui.dp(this,4));
+            Ui.Icon icon=new Ui.Icon(this,icons[i],active?Ui.GOLD:Ui.MUTED);
+            LinearLayout.LayoutParams iconParams=Ui.lp(this,24,24);
+            iconParams.gravity=Gravity.CENTER_HORIZONTAL;
+            item.addView(icon,iconParams);
+            Ui.space(item,5);
+            TextView label=Ui.t(this,labels[i],11,active?Ui.GOLD:Ui.MUTED,active);
+            label.setGravity(Gravity.CENTER);
+            label.setSingleLine(true);
+            label.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            item.addView(label,new LinearLayout.LayoutParams(-1,-2));
+            item.setContentDescription(labels[i]+(active?", selecionado":""));
+            Ui.tappable(item,()->tab(target));
+            bar.addView(item,new LinearLayout.LayoutParams(0,Ui.dp(this,66),1));
+        }
+        LinearLayout.LayoutParams dockParams=Ui.lp(this,-1,-2);
+        dockParams.setMargins(Ui.dp(this,10),0,Ui.dp(this,10),Ui.dp(this,8));
+        shell.addView(bar,dockParams);
     }
     DemoDb.Player me(){for(DemoDb.Player p:db.players())if(p.id==playerId)return p;return db.players().get(0);}
     boolean canManage(){return role.equals("Organizador")||role.equals("Administrador");}
