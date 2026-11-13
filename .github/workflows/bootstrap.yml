@@ -19,6 +19,7 @@ jobs:
           sh repair-gradle.sh
           python3 -m pip install --quiet pillow
           python3 make_assets.py
+          sh apply-v02.sh
           rm -rf payload .github/workflows/bootstrap.yml
       - name: Commit complete app
         shell: bash
