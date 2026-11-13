@@ -24,6 +24,8 @@ final class HomeScreen extends Screen {
         }
         pair(page,a.mark("home_groups",quick("users","Minhas peladas","Grupos e partidas",()->a.tab("groups"))),quick("trophy","Campeonatos","Ligas e tabelas",()->a.tab("league")));gap(10);
         pair(page,quick("shuffle","Sortear times","Equipes equilibradas",()->a.open("draw")),quick("stats","Minha carreira","Gols, jogos e mais",()->a.tab("profile")));
+        gap(14);
+        TextView online=Ui.chip(a,"Peladas online e convites",false,()->a.open("online"));add(online);
         gap(18);LinearLayout recent=Ui.row(a);recent.addView(text("Último resultado",14,Ui.WHITE,true),new LinearLayout.LayoutParams(0,-2,1));TextView all=text("Ver jogos",12,Ui.GOLD,true);all.setMinHeight(Ui.dp(a,48));Ui.tappable(all,()->{a.groupTab=1;a.open("group");});recent.addView(all);add(recent);
         for(DemoDb.Game m:db.games(a.groupId))if(m.status.equals("DEMO_APPROVED")){LinearLayout c=card();gameRow(c,m);add(c);break;}
     }
