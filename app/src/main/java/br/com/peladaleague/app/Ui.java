@@ -49,7 +49,7 @@ public final class Ui {
         });
         v.setOnClickListener(x->{v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);click.run();});
     }
-    public static TextView button(Context c,String title,boolean filled,Runnable click){TextView v=t(c,title,15,filled?BG:WHITE,true);v.setGravity(Gravity.CENTER);v.setMinHeight(dp(c,48));v.setPadding(dp(c,12),dp(c,10),dp(c,12),dp(c,10));v.setBackground(filled?gold(c,13):shimmer(c,13));v.setElevation(dp(c,filled?2:0));tappable(v,click);return v;}
+    public static TextView button(Context c,String title,boolean filled,Runnable click){TextView v=new NeonButton(c,title,filled);v.setGravity(Gravity.CENTER);v.setMinHeight(dp(c,48));v.setPadding(dp(c,12),dp(c,10),dp(c,12),dp(c,10));v.setBackground(filled?gold(c,13):shimmer(c,13));v.setElevation(dp(c,filled?2:0));tappable(v,click);return v;}
     public static TextView chip(Context c,String text,boolean selected,Runnable click){TextView v=t(c,text,12,selected?BG:MUTED,selected);v.setGravity(Gravity.CENTER);v.setMinHeight(dp(c,44));v.setPadding(dp(c,8),0,dp(c,8),0);v.setBackground(selected?gold(c,20):round(c,RAISED,20,0));if(click!=null)tappable(v,click);return v;}
     public static TextView badge(Context c,String text,boolean selected){TextView v=t(c,text,11,selected?BG:GOLD, true);v.setGravity(Gravity.CENTER);v.setPadding(dp(c,11),dp(c,5),dp(c,11),dp(c,5));v.setBackground(selected?gold(c,20):round(c,0x302D260A,20,0x666B5516));return v;}
     public static void heading(LinearLayout parent,String text){TextView v=t(parent.getContext(),text,17,WHITE,true);parent.addView(v);space(parent,11);}
