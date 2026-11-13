@@ -17,6 +17,7 @@ import org.json.*;
 final class OnlineEventsScreen extends Screen {
     static final class State {
         JSONArray groups=new JSONArray(),events=new JSONArray();
+        Map<String,String> personalStatuses=new HashMap<>();
         JSONObject preview,finance;
         String code="",lastError="";
         boolean loading=false,loaded=false,previewLoading=false;
@@ -57,6 +58,12 @@ final class OnlineEventsScreen extends Screen {
                 button("Adicionar outro grupo",false,this::createGroup);
             }
             button("Abrir convite por código",false,this::askCode);
+            gap(8);
+            if(EventReminders.enabled(a)){
+                button("Desativar lembretes neste aparelho",false,()->{
+                    EventReminders.setEnabled(a,false);a.refresh();
+                });
+            }else button("Ativar lembretes de partidas",false,this::enableReminders);
             TextView refresh=Ui.chip(a,"Atualizar eventos",false,this::load);
             add(refresh);
         }
@@ -76,21 +83,63 @@ final class OnlineEventsScreen extends Screen {
             Ui.put(item,Ui.chip(a,"Pagamentos online",false,()->onlineFinance(id)),7);
             add(item);gap(9);
         }
-        sub("A sincronização online usa o servidor. As peladas da demonstração local não são importadas automaticamente.");
+        sub("Os avisos são lembretes agendados neste aparelho, depois que você autoriza notificações e abre os eventos. O aplicativo ainda não envia push automático para todos os convidados.");
+        sub("As peladas da demonstração local não são importadas automaticamente.");
     }
     private void load(){
         if(!a.auth.loggedIn()||state.loading)return;
         state.loading=true;state.lastError="";
         a.auth.runOnline(()->{
             JSONArray g=a.auth.authorized("GET","/rest/v1/groups?select=id,name&order=created_at.desc",null).getJSONArray("rows");
-            JSONArray events=a.auth.authorized("GET","/rest/v1/events?select=id,title,location,starts_at,status,invite_code&order=created_at.desc&limit=30",null).getJSONArray("rows");
-            a.runOnUiThread(()->{state.groups=g;state.events=events;state.loaded=true;});
+            JSONArray events=a.auth.authorized("GET","/rest/v1/events?select=id,group_id,title,location,starts_at,status,invite_code&order=created_at.desc&limit=30",null).getJSONArray("rows");
+            Map<String,String> self=new HashMap<>();
+            String user=a.auth.userId();
+            if(user.matches("[a-fA-F0-9\\-]{36}")){
+                JSONArray own=a.auth.authorized("GET","/rest/v1/event_attendance?select=event_id,status&user_id=eq."+user,null).getJSONArray("rows");
+                for(int i=0;i<own.length();i++){
+                    JSONObject entry=own.optJSONObject(i);
+                    if(entry!=null)self.put(entry.optString("event_id"),entry.optString("status"));
+                }
+            }
+            a.runOnUiThread(()->{state.groups=g;state.events=events;state.personalStatuses=self;state.loaded=true;});
             return "Eventos atualizados.";
         },(ok,msg)->{
             state.loading=false;
             if(!ok)state.lastError=msg;
+            else syncReminders();
             if(a.route.equals("online"))a.refresh();
         });
+    }
+    /** Native opt-in: no prompts before the player explicitly requests reminders. */
+    private void enableReminders(){
+        if(!EventReminders.allowed(a)){
+            if(android.os.Build.VERSION.SDK_INT>=33)
+                a.requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS},
+                    EventReminders.PERMISSION_REQUEST);
+            else a.toast("Ative as notificações deste aplicativo nas configurações do Android.");
+            return;
+        }
+        EventReminders.setEnabled(a,true);
+        syncReminders();
+        a.toast("Avisos ativados neste aparelho.");
+        a.refresh();
+    }
+    /** Only the organizer or a confirmed player receives event reminders on this device. */
+    void syncReminders(){
+        if(!EventReminders.enabled(a)||!EventReminders.allowed(a))return;
+        EventReminders.clear(a);
+        Set<String> ownedGroups=new HashSet<>();
+        for(int i=0;i<state.groups.length();i++){
+            JSONObject group=state.groups.optJSONObject(i);
+            if(group!=null)ownedGroups.add(group.optString("id"));
+        }
+        for(int i=0;i<state.events.length();i++){
+            JSONObject event=state.events.optJSONObject(i);
+            if(event==null)continue;
+            boolean organizer=ownedGroups.contains(event.optString("group_id"));
+            boolean playing=DemoDb.CONFIRMED.equals(state.personalStatuses.get(event.optString("id")));
+            if(organizer||playing)EventReminders.schedule(a,event);
+        }
     }
     private void askCode(){
         EditText code=Ui.input(a,"Cole o código do convite");
@@ -154,7 +203,7 @@ final class OnlineEventsScreen extends Screen {
                 JSONObject resp=a.auth.authorized("POST","/rest/v1/rpc/event_respond",body);
                 return resp.optString("status","Registro salvo no servidor.");
             },(ok,msg)->{
-                if(ok){a.toast("Presença: "+msg);open(state.code);}
+                if(ok){a.toast("Presença: "+msg);open(state.code);load();}
                 else a.toast(msg);
             });
         }catch(Exception ex){a.toast("Não foi possível preparar a confirmação.");}
