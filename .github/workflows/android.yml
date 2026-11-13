@@ -31,6 +31,7 @@ jobs:
           key: pelada-debug-keystore-v04
       - name: Rules and APKs
         run: |
+          python3 scripts/check-supabase-sql.py
           sh scripts/test-core.sh
           chmod +x gradlew
           ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug --no-daemon
