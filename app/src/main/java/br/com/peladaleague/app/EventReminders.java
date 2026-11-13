@@ -133,10 +133,15 @@ final class EventReminders {
 }
 final class EventReminderReceiver extends BroadcastReceiver {
     @Override public void onReceive(Context context,Intent intent){
-        if("android.intent.action.BOOT_COMPLETED".equals(intent.getAction())||
-           "android.intent.action.MY_PACKAGE_REPLACED".equals(intent.getAction()))
-            EventReminders.restore(context);
-        else if("br.com.peladaleague.REMINDER".equals(intent.getAction()))
+        if("br.com.peladaleague.REMINDER".equals(intent.getAction()))
             EventReminders.notify(context,intent);
+    }
+}
+/** Explicitly exported only for system reboot broadcasts, never for private reminder actions. */
+final class EventReminderBootReceiver extends BroadcastReceiver {
+    @Override public void onReceive(Context context,Intent intent){
+        if(Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())||
+           Intent.ACTION_MY_PACKAGE_REPLACED.equals(intent.getAction()))
+            EventReminders.restore(context);
     }
 }
