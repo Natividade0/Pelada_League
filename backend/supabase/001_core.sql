@@ -170,7 +170,7 @@ grant select on public.groups,public.group_members,public.events,public.event_at
   public.event_exemptions,public.event_payments,public.event_payment_log to authenticated;
 
 -- All group/event creation and attendance/payment writes go through checked RPCs.
-create or replace function public.create_group(p_name text) returns uuid
+create or replace function public.create_group(p_name text) returns jsonb
 language plpgsql security definer set search_path=public, pg_temp
 as $$
 declare actor uuid:=auth.uid();gid uuid;
@@ -180,8 +180,8 @@ begin
     then raise exception 'Informe um nome válido para a pelada.'; end if;
   insert into public.groups(name,owner_id)values(trim(p_name),actor)returning id into gid;
   insert into public.group_members(group_id,user_id,role)values(gid,actor,'ORGANIZER');
-  return gid;
-end $$;
+  return jsonb_build_object('id',gid);
+end $;
 
 create or replace function public.create_event(
  p_group uuid,p_title text,p_location text,p_starts_at timestamptz,
