@@ -49,6 +49,10 @@ begin
   insert into public.live_matches(event_id)values(p_event)on conflict do nothing;
   select * into v_match from public.live_matches where event_id=p_event for update;
   if v_match.state='FINISHED' then raise exception 'A partida já foi encerrada.';end if;
+  if v_match.state='READY' and p_action='LIVE' and (
+    select count(*) from public.event_attendance
+    where event_id=p_event and status='CONFIRMED'
+  )<4 then raise exception 'Confirme ao menos quatro jogadores antes de iniciar.';end if;
   if v_match.state='READY' and p_action='PAUSED' then raise exception 'Inicie a partida primeiro.';end if;
   if v_match.state='LIVE' and p_action<>'LIVE' then
     delta:=greatest(0,(extract(epoch from(now_at-v_match.running_since))*1000)::bigint);
