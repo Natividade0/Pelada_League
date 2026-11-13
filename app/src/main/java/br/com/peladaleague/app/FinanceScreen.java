@@ -46,6 +46,7 @@ final class FinanceScreen extends Screen {
     void render(){
         title("Pagamentos da pelada");
         LocalFinance.Config config=f.config(a.groupId);
+        if(!a.canManage()){myPayment(config);return;}
         LocalFinance.Summary total=f.summary(a.groupId);
         add(text(db.group(a.groupId)[0],18,Ui.WHITE,true));
         sub("Controle manual · sessão atual · "+total.people+" confirmados");
@@ -116,6 +117,31 @@ final class FinanceScreen extends Screen {
             TextView audit=Ui.chip(a,"Histórico de alterações",false,this::history);add(audit);
         }
         sub("Os pagamentos são informados manualmente pelo organizador. Esta versão ainda salva as informações apenas neste aparelho; não verifica Pix nem sincroniza com outros celulares.");
+    }
+    /** Players see their own payment only; other people's debt is private. */
+    private void myPayment(LocalFinance.Config config){
+        DemoDb.Player player=a.me();
+        if(!DemoDb.CONFIRMED.equals(db.attendance(a.groupId).get(player.id))){
+            empty("Confirme sua presença","Seu pagamento será exibido aqui depois que você confirmar presença nesta pelada.","Abrir presenças",()->a.open("attendance"));
+            return;
+        }
+        int due=f.due(a.groupId,player),paid=f.paid(a.groupId,player.id);
+        LinearLayout card=card();
+        card.addView(text("Meu pagamento",17,Ui.WHITE,true));
+        Ui.put(card,text(f.paymentStatus(a.groupId,player),17,due==0||paid>=due?Ui.GREEN:Ui.GOLD,true),10);
+        Ui.put(card,text("Contribuição: "+money(due),14,Ui.WHITE,false),9);
+        Ui.put(card,text("Valor registrado: "+money(paid),14,Ui.WHITE,false),6);
+        Ui.put(card,text(due==0?"Você está isento neste evento.":"Saldo pendente: "+money(Math.max(0,due-paid)),13,Ui.MUTED,false),8);
+        add(card);gap(12);
+        if(!config.pixKey.isEmpty()){
+            TextView copy=Ui.button(a,"Copiar Pix do organizador",true,()->{
+                android.content.ClipboardManager cb=(android.content.ClipboardManager)a.getSystemService(android.content.Context.CLIPBOARD_SERVICE);
+                cb.setPrimaryClip(android.content.ClipData.newPlainText("Chave Pix",config.pixKey));
+                a.toast("Confira o destinatário antes de transferir.");
+            });
+            add(copy);
+        }
+        sub("Seu pagamento é confirmado manualmente pelo organizador. Os pagamentos dos demais participantes não são exibidos.");
     }
     private LinearLayout metric(String caption,String value,int color){
         LinearLayout v=Ui.col(a);v.addView(text(caption,11,Ui.MUTED,false));
