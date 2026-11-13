@@ -1,0 +1,16 @@
+.gradle/
+.idea/
+*.iml
+local.properties
+**/build/
+*.apk
+*.aab
+.DS_Store
+*.keystore
+*.jks
+.env
+.local-test/
+.tmpcore/
+
+qa-output/
+.pelada-league-release

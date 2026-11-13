@@ -1,0 +1,27 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'br.com.peladaleague.app'
+    useLibrary 'android.test.runner'
+    useLibrary 'android.test.base'
+    compileSdk 35
+    defaultConfig {
+        applicationId 'br.com.peladaleague.app'
+        minSdk 26
+        targetSdk 35
+        versionCode 4
+        versionName '0.4.0-alpha'
+        testInstrumentationRunner 'android.test.InstrumentationTestRunner'
+    }
+    compileOptions {
+        coreLibraryDesugaringEnabled true
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    buildTypes {
+        release { minifyEnabled false }
+    }
+}
+dependencies {
+    implementation project(':core')
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
+}

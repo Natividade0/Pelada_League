@@ -1,37 +1,68 @@
-# Pelada League — atualização visual 0.3.0-alpha
+# Pelada League · 0.4.0-alpha
 
-**Interface premium refeita com base no mockup preto e dourado.** A v0.3 inclui navegação e cartões redesenhados, iconografia esportiva original, animações e sorteador visual de jogadores confirmados. Para atualizar no Code on the Go: `git pull origin main` e `sh apply-v03.sh`. Leia [ATUALIZACAO_0.3.md](ATUALIZACAO_0.3.md).
+Aplicativo Android nativo para organizar peladas, confirmar presenças, sortear equipes e registrar partidas. Esta atualização reconstrói as oito telas da direção visual preto/dourado e mantém o banco SQLite da versão anterior.
 
-**Importante:** ainda é uma demonstração local. O APK debug passou na compilação automatizada; ainda precisa de teste visual no aparelho; não há autenticação remota.
+**É uma demonstração local funcional.** Não há login online, sincronização entre celulares ou validação oficial de identidades. Jogador cadastrado localmente não é uma conta autenticada. A tabela usa somente súmulas validadas na demonstração; gols contra não entram na artilharia.
 
----
+## Instalar e atualizar no Code on the Go
 
-# ⚽ Pelada League — alfa Android 0.1.0
+O código agora está diretamente em `app/` e `core/`. Não precisa extrair `payload/` nem instalar Python.
 
-Projeto Android nativo (Java + Gradle) com identidade visual **preto, dourado e amarelo** inspirada na prévia aprovada pelo criador.
+Para quem tem a versão antiga extraída e possivelmente arquivos locais não rastreados, abra o terminal **dentro de Pelada_League**:
 
-O aplicativo inclui telas de início, peladas, sorteio de equipes, registro de partidas, súmula local demonstrativa com código de **4 dígitos**, classificação, artilharia e perfil.
+```sh
+git fetch origin
+git worktree add --detach ../Pelada_League_0.4 origin/redesign/native-premium-v04
+```
 
-## Clonar no Code on the Go
+Abra a pasta vizinha **Pelada_League_0.4** no Code on the Go, sincronize o Gradle e use a opção de compilar/instalar. A pasta antiga fica intacta. Isso é outro checkout do **mesmo repositório e aplicativo**, não outro produto.
 
-URL: `https://github.com/Natividade0/Pelada_League.git`
+Se a pasta `Pelada_League_0.4` já existe, não repita o comando de criação. Dentro dela, estando sem alterações locais pendentes:
 
-**Como a primeira importação do código está em um pacote comprimido**, há duas formas de abrir:
+```sh
+git fetch origin
+git merge --ff-only origin/redesign/native-premium-v04
+```
 
-1. Faça o clone privado na sua conta autenticada, abra a pasta pelo Code on the Go e sincronize o Gradle. O `settings.gradle` tenta extrair o projeto automaticamente na primeira sincronização.
-2. Se a sincronização não conseguir extrair (por falta de Python 3 ou xz), execute `sh bootstrap.sh` no terminal da pasta clonada e sincronize novamente. Sem Pillow, o script usa recursos vetoriais alternativos. Para gerar as imagens completas, use `python3 -m pip install pillow && python3 make_assets.py`.
-3. Alternativamente, no GitHub, abra **Actions → Import Pelada League Android source → Run workflow**. Esse workflow expande o projeto, gera os recursos visuais e tenta compilar um APK de teste.
+Não desinstale o aplicativo para atualizar. O Android só permite substituir uma instalação quando o APK usa **a mesma chave de assinatura**. Compilar no mesmo Code on the Go mantém a chave local. Um APK de teste gerado em outro ambiente pode ter outra assinatura; nesse caso mantenha a instalação e compile com sua chave original. O `applicationId` permanece `br.com.peladaleague.app`.
 
-Configuração: Java 17, AGP 8.11, Gradle 8.13, compileSdk 35. O Android SDK é necessário para compilar.
+## Compilar
 
-## Estado do produto
+- JDK 17, Gradle 9.6.1, Android Gradle Plugin 9.3.1.
+- compileSdk/targetSdk 35, minSdk 26.
+- AGP usa Build Tools 36.0.0; o SDK Manager precisa disponibilizá-lo.
+- Desugaring de biblioteca Java para APIs Java 9+ em Android 8+.
 
-**Alfa local:** contém dados de exemplo e banco SQLite no aparelho. Não há login real, backend, pagamentos ou aprovação antifraude remota. Os códigos de quatro dígitos são demonstração, não prova de aprovação por duas contas independentes. O objetivo da primeira entrega é validar navegação, aparência e regras locais antes de implementar contas e sincronização.
+```sh
+sh scripts/test-core.sh
+./gradlew :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug
+```
 
-## Segurança e direitos
+APK: `app/build/outputs/apk/debug/app-debug.apk`.
+No GitHub: **Actions → Android 0.4 · build and device tests → artefato PeladaLeague-0.4-debug**.
 
-- O código não contém chaves privadas nem credenciais de backend.
-- Os rankings locais não representam resultados oficiais verificados.
-- Repositório privado; sem licença pública de redistribuição.
+## Funcionalidades desta versão
 
-© 2026 Pelada League.
+- Oito telas nativas separadas, estádio original, escudo e camisas vetoriais, navegação inferior fixa, formulários que mantêm os dados ao detectar erro.
+- Presença por sessão, lotação, espera FIFO e promoção automática ao abrir vagas.
+- Sorteio de 2–4 times, seleção apenas de confirmados, equilíbrio por habilidade/goleiros/posições e persistência do sorteio.
+- Mudanças na presença invalidam o sorteio. Novas partidas têm escalação persistida e validada.
+- Gols, gols contra, assistências, cartões, edição/exclusão confirmada, placar derivado e bloqueio após envio.
+- Aprovação demonstrativa com exatamente 4 dígitos, validade de 3 minutos, 3 tentativas e uso único.
+- Correção de súmula pendente com invalidação dos códigos e auditoria local.
+- Classificação por pontos, artilharia, perfil editável, carreira e histórico derivados dos registros.
+- Simulação explícita de papéis em **Informações → Perfil de teste**. Não substitui autorização no servidor.
+
+## Testar no Android
+
+Em um emulador de QA descartável, já iniciado:
+
+```sh
+sh scripts/test-android.sh
+```
+
+Os testes de banco usam um banco isolado. O teste visual adiciona partidas de demonstração ao banco do app no emulador. Não execute esse teste visual no aparelho com seus dados de uso.
+
+Consulte [arquitetura](docs/ARQUITETURA.md), [notas da versão](docs/CHANGELOG_0.4.md), [validação](docs/VALIDACAO_0.4.md) e [evolução online](docs/PLANO_DE_EVOLUCAO.md).
+
+© 2026 Pelada League. Recursos visuais originais; sem marcas de clubes reais.

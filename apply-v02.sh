@@ -2,6 +2,10 @@
 # Pelada League v0.2 updater; execute with: sh apply-v02.sh
 set -eu
 cd "$(dirname "$0")"
+if [ -f app/build.gradle ] && grep -q "0.4.0-alpha" app/build.gradle; then
+  echo "Projeto 0.4 preservado. Atualizadores antigos não se aplicam."
+  exit 0
+fi
 if [ ! -f app/build.gradle ]; then
   echo "Projeto base nao foi extraido. Primeiro execute: sh bootstrap.sh"
   exit 1

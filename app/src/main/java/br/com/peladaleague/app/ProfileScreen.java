@@ -1,0 +1,20 @@
+package br.com.peladaleague.app;
+import android.view.*;
+import android.widget.*;
+import java.util.*;
+
+final class ProfileScreen extends Screen {
+    ProfileScreen(MainActivity a){super(a);}
+    void render(){title("Meu Perfil");DemoDb.Player me=a.me();LinearLayout portrait=Ui.col(a);portrait.setGravity(Gravity.CENTER);
+        FrameLayout avatar=new FrameLayout(a);avatar.setBackground(Ui.round(a,0xFF171C1F,60,Ui.GOLD));SportArt shirt=new SportArt(a,"shirt",Ui.GOLD);FrameLayout.LayoutParams sp=new FrameLayout.LayoutParams(Ui.dp(a,73),Ui.dp(a,78),Gravity.CENTER);avatar.addView(shirt,sp);TextView initial=text(a.shirtNumber>0?""+a.shirtNumber:me.name.substring(0,1).toUpperCase(Locale.ROOT),21,Ui.BG,true);initial.setGravity(Gravity.CENTER);FrameLayout.LayoutParams ip=new FrameLayout.LayoutParams(-1,Ui.dp(a,40),Gravity.CENTER);ip.topMargin=Ui.dp(a,12);avatar.addView(initial,ip);avatar.setContentDescription("Avatar de "+me.name);portrait.addView(avatar,Ui.lp(a,104,104));Ui.space(portrait,10);
+        TextView name=text(me.name+(a.shirtNumber>0?" #"+a.shirtNumber:""),24,Ui.WHITE,true);name.setGravity(Gravity.CENTER);portrait.addView(name);Ui.space(portrait,5);portrait.addView(text(position(me.pos),13,Ui.MUTED,false));Ui.space(portrait,8);portrait.addView(Ui.badge(a,"PL-LOCAL-"+String.format(Locale.ROOT,"%05d",me.id),false));add(stadium(portrait,226,false));gap(12);
+        tabs(new String[]{"Carreira","Conquistas","Histórico"},a.profileTab,i->{a.profileTab=i;a.refresh();});
+        if(a.profileTab==0){LinearLayout stats=Ui.row(a);String[][] metrics={{""+db.playerMatches(me.id),"Jogos","goal"},{""+db.playerGoals(me.id),"Gols","goal"},{""+db.playerAssists(me.id),"Assist.","stats"},{"—","Títulos","trophy"}};
+            for(String[] metric:metrics){LinearLayout stat=Ui.col(a);stat.setGravity(Gravity.CENTER);stat.setPadding(Ui.dp(a,3),Ui.dp(a,12),Ui.dp(a,3),Ui.dp(a,12));stat.setBackground(Ui.shimmer(a,12));stat.addView(new Ui.Icon(a,metric[2],Ui.GOLD),Ui.lp(a,24,24));Ui.space(stat,8);stat.addView(text(metric[0],23,Ui.WHITE,true));Ui.space(stat,5);stat.addView(text(metric[1],11,Ui.MUTED,false));LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(0,-2,1);p.setMargins(Ui.dp(a,3),0,Ui.dp(a,3),0);stats.addView(stat,p);}add(stats);gap(12);
+            LinearLayout actions=card();actions.addView(Ui.action(a,"stats","Meu histórico","Partidas e resultados registrados",()->{a.profileTab=2;a.refresh();}));Ui.divider(actions);actions.addView(Ui.action(a,"edit","Editar jogador",null,()->new Forms(a).editPlayer(me)));Ui.divider(actions);actions.addView(Ui.action(a,"profile","Perfil e permissões",a.role+" · simulação local",a::info));add(actions);
+            sub("Estatísticas de súmulas validadas localmente. Jogos antigos sem escalação não contam como participação. Títulos ainda não são apurados.");
+        }else if(a.profileTab==1){int goals=db.playerGoals(me.id),matches=db.playerMatches(me.id);LinearLayout box=card();box.addView(new Ui.Icon(a,"award",Ui.GOLD),Ui.lp(a,40,44));Ui.put(box,text(goals>0?"Primeiro gol registrado":"Sua história está começando",17,Ui.WHITE,true),10);Ui.put(box,text(goals>0?"Você marcou em uma súmula validada localmente.":"Registre partidas e valide as súmulas para acompanhar sua evolução.",13,Ui.MUTED,false),8);add(box);gap(10);if(matches>0){LinearLayout played=card();line(played,"goal","Entrou em campo",matches+" jogos");add(played);}sub("Marcos locais de carreira. Não representam títulos de campeonato.");}
+        else{List<DemoDb.Game> history=db.playerHistory(me.id);if(history.isEmpty())empty("Seu próximo jogo conta","Seu histórico começa quando você participa de uma partida com escalação salva.","Abrir minha pelada",()->a.open("group"));else{LinearLayout list=card();for(DemoDb.Game m:history){gameRow(list,m);Ui.divider(list);}add(list);}}
+    }
+    private String position(String pos){switch(pos){case "GOL":return "Goleiro";case "ZAG":return "Defensor";case "MEI":return "Meio-campista";case "ATA":return "Atacante";default:return "Jogador de linha";}}
+}

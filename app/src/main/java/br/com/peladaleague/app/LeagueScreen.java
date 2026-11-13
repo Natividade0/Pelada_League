@@ -1,0 +1,20 @@
+package br.com.peladaleague.app;
+import android.view.*;
+import android.widget.*;
+import br.com.peladaleague.core.LeagueRules;
+import java.util.*;
+
+final class LeagueScreen extends Screen {
+    LeagueScreen(MainActivity a){super(a);}
+    void render(){LinearLayout c=Ui.col(a);LinearLayout h=Ui.row(a);h.addView(new Ui.Icon(a,"trophy",Ui.GOLD),Ui.lp(a,40,44));LinearLayout t=Ui.col(a);t.setPadding(Ui.dp(a,9),0,0,0);t.addView(text("Campeonato da Pelada",20,Ui.WHITE,true));Ui.put(t,text(db.group(a.groupId)[0],12,Ui.MUTED,false),5);h.addView(t,new LinearLayout.LayoutParams(0,-2,1));c.addView(h);add(stadium(c,96,true));gap(12);
+        if(db.groupCount()>1){TextView choose=text("Trocar pelada",12,Ui.GOLD,true);choose.setMinHeight(Ui.dp(a,44));Ui.tappable(choose,()->{List<String[]> groups=db.groups();new android.app.AlertDialog.Builder(a).setTitle("Classificação de qual pelada?").setItems(groups.stream().map(g->g[1]).toArray(String[]::new),(d,i)->{a.groupId=Long.parseLong(groups.get(i)[0]);a.refresh();}).show();});add(choose);}
+        tabs(new String[]{"Classificação","Artilharia","Jogos"},a.leagueTab,i->{a.leagueTab=i;a.refresh();});
+        if(a.leagueTab==0){table();gap(16);heading("Artilharia · Top 3");scorers(3);}else if(a.leagueTab==1){scorers(30);}else{LinearLayout games=card();if(db.games(a.groupId).isEmpty())games.addView(text("Ainda não há partidas nesta pelada.",13,Ui.MUTED,false));for(DemoDb.Game m:db.games(a.groupId)){gameRow(games,m);Ui.divider(games);}add(games);}
+        gap(12);sub("Tabela local por pontos · só súmulas validadas.\nDados de demonstração, sem classificação oficial online.");
+    }
+    private void table(){Set<String> names=new LinkedHashSet<>();List<LeagueRules.Result> results=new ArrayList<>();for(DemoDb.Game m:db.games(a.groupId)){names.add(m.a);names.add(m.b);results.add(new LeagueRules.Result(m.a,m.b,db.goals(m.id,0),db.goals(m.id,1),m.status.equals("DEMO_APPROVED")));}List<LeagueRules.Standing> standings=LeagueRules.standings(names,results);if(standings.isEmpty()){empty("A disputa começa aqui","Os resultados aparecerão após a criação e aprovação das partidas.","Abrir pelada",()->a.open("group"));return;}
+        LinearLayout board=card();LinearLayout header=Ui.row(a);TextView title=text("#   Time",11,Ui.MUTED,true);header.addView(title,new LinearLayout.LayoutParams(0,-2,1));for(String name:new String[]{"P","J","V","SG"})header.addView(cell(name,Ui.MUTED));board.addView(header);Ui.space(board,7);
+        int rank=0;for(LeagueRules.Standing s:standings){LinearLayout row=Ui.row(a);row.setMinimumHeight(Ui.dp(a,44));if(rank==0)row.setBackground(Ui.round(a,0x224E3D10,7,0));TextView r=text(""+(++rank),12,rank==1?Ui.GOLD:Ui.MUTED,true);row.addView(r,Ui.lp(a,21,-2));row.addView(new SportArt(a,"shirt",a.teamColor(s.name)),Ui.lp(a,21,25));TextView name=text(s.name,12,Ui.WHITE,true);name.setPadding(Ui.dp(a,5),0,0,0);row.addView(name,new LinearLayout.LayoutParams(0,-2,1));for(int value:new int[]{s.points,s.played,s.wins,s.goalDifference()})row.addView(cell(""+value,Ui.WHITE));board.addView(row);Ui.divider(board);}add(board);sub("P pontos   J jogos   V vitórias   SG saldo de gols");}
+    private TextView cell(String value,int color){TextView v=text(value,12,color,true);v.setGravity(Gravity.CENTER);v.setLayoutParams(Ui.lp(a,27,-2));return v;}
+    void scorers(int limit){LinearLayout box=card();int index=0;for(Map.Entry<String,Integer> entry:db.topScorers(a.groupId).entrySet()){if(index>=limit)break;LinearLayout row=Ui.row(a);row.setMinimumHeight(Ui.dp(a,47));row.addView(text(""+(++index),13,index==1?Ui.GOLD:Ui.MUTED,true),Ui.lp(a,23,-2));row.addView(Ui.initials(a,entry.getKey(),29),Ui.lp(a,29,29));TextView name=text(entry.getKey(),13,Ui.WHITE,true);name.setPadding(Ui.dp(a,8),0,Ui.dp(a,4),0);row.addView(name,new LinearLayout.LayoutParams(0,-2,1));row.addView(text(entry.getValue()+" gols",12,Ui.GOLD,true));box.addView(row);Ui.divider(box);}if(index==0){box.addView(text("Ainda sem artilheiros",15,Ui.WHITE,true));Ui.put(box,text("Gols de partidas validadas entram aqui. Gols contra não contam para o jogador.",12,Ui.MUTED,false),8);}add(box);}
+}
