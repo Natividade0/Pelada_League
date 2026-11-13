@@ -12,6 +12,7 @@ import java.util.*;
 public final class DatabaseTest extends InstrumentationTestCase {
     private DemoDb db; private Context context;
     protected void setUp() throws Exception {super.setUp();Context target=getInstrumentation().getTargetContext();context=new ContextWrapper(target){
+        public java.io.File getDatabasePath(String name){return super.getDatabasePath("qa_"+name);}
         public SQLiteDatabase openOrCreateDatabase(String name,int mode,SQLiteDatabase.CursorFactory factory){return super.openOrCreateDatabase("qa_"+name,mode,factory);}
         public SQLiteDatabase openOrCreateDatabase(String name,int mode,SQLiteDatabase.CursorFactory factory,DatabaseErrorHandler handler){return super.openOrCreateDatabase("qa_"+name,mode,factory,handler);}
     };target.deleteDatabase("qa_pelada_league_demo.db");db=new DemoDb(context);db.getWritableDatabase();}

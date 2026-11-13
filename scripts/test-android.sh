@@ -13,7 +13,9 @@ cat qa-output/database-tests.txt
 grep -q 'OK (' qa-output/database-tests.txt
 adb shell am instrument -w -e class br.com.peladaleague.app.UiTest br.com.peladaleague.app.test/android.test.InstrumentationTestRunner > qa-output/ui-tests.txt
 cat qa-output/ui-tests.txt
-adb pull /sdcard/Android/data/br.com.peladaleague.app/files/qa qa-output/screenshots
+adb exec-out run-as br.com.peladaleague.app tar -C files -cf - qa > qa-output/screenshots.tar
+mkdir -p qa-output/screenshots
+tar -xf qa-output/screenshots.tar -C qa-output/screenshots --strip-components=1
 grep -q 'OK (' qa-output/ui-tests.txt
 adb shell am force-stop br.com.peladaleague.app
 adb shell am start -W -n br.com.peladaleague.app/.MainActivity > qa-output/relaunch.txt
