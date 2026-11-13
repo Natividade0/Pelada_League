@@ -22,6 +22,15 @@ public final class UiTest extends InstrumentationTestCase {
         Intent intent=new Intent(getInstrumentation().getTargetContext(),MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK);
         a=(MainActivity)getInstrumentation().startActivitySync(intent);getInstrumentation().waitForIdleSync();
         ui(()->{a.role="Organizador";a.route="welcome";a.render(false);});screenshot("01-welcome");click("Explorar demonstração");assertEquals("home",a.route);
+        ui(()->{
+            // A new install shows the tour before ordinary navigation.
+            assertTrue("First-run walkthrough missing",a.onboarding.active());
+            a.onboarding.skip();
+            assertFalse("Skip should dismiss the tour",a.onboarding.active());
+            a.onboarding.start();
+            assertTrue("Tutorial must be replayable",a.onboarding.active());
+            a.onboarding.skip();
+        });
         // Known demo fixtures, persisted through the same repository methods as the app.
         ui(()->{a.groupId=1;a.db.setCapacity(1,14);for(int i=1;i<=10;i++)a.db.markAttendance(1,i,DemoDb.CONFIRMED);a.refresh();});top();screenshot("02-home");
         click("Sua próxima partida");assertEquals("group",a.route);top();screenshot("03-group");click("Sortear times");assertEquals("draw",a.route);click("Sortear Times");
