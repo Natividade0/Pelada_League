@@ -37,6 +37,7 @@ final class CloudAuth {
     }
     boolean loggedIn(){return enabled()&&session!=null&&session.optString("refresh_token").length()>10;}
     String email(){return email==null?"":email;}
+    String userId(){return session==null?"":session.optString("uid","");}
     void logout(){
         session=null;email=null;
         a.getSharedPreferences(PREFERENCES,Context.MODE_PRIVATE).edit().clear().apply();
@@ -162,6 +163,10 @@ final class CloudAuth {
         record.put("access_token",token);record.put("refresh_token",refresh);
         record.put("expires_at",System.currentTimeMillis()/1000L+Math.max(120,payload.optLong("expires_in",3600)));
         record.put("email",mail==null?"":mail);
+        JSONObject user=payload.optJSONObject("user");
+        String uid=user==null?"":user.optString("id");
+        if(uid.isEmpty()&&session!=null)uid=session.optString("uid");
+        record.put("uid",uid);
         byte[] encrypted=encrypt(record.toString());
         a.getSharedPreferences(PREFERENCES,Context.MODE_PRIVATE).edit()
             .putString("session",Base64.encodeToString(encrypted,Base64.NO_WRAP)).apply();
