@@ -108,6 +108,7 @@ final class LeagueScreen extends Screen {
         TextView out=text(value,12,color,true);out.setGravity(Gravity.CENTER);
         out.setLayoutParams(Ui.lp(a,27,-2));return out;
     }
+    void scorers(int limit){scorers(chosenSeason(),limit);}
     private void scorers(DemoDb.Season season,int limit){
         LinearLayout list=card();int index=0;
         for(Map.Entry<String,Integer> entry:db.seasonScorers(a.groupId,season.id).entrySet()){
