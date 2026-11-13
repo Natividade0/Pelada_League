@@ -5,6 +5,7 @@ def localFile = rootProject.file('local.properties')
 if (localFile.exists()) localFile.withInputStream { localConfig.load(it) }
 def publicUrl = localConfig.getProperty('supabase.url', (project.findProperty('supabase.url') ?: '').toString()).trim()
 def publicKey = localConfig.getProperty('supabase.anonKey', (project.findProperty('supabase.anonKey') ?: '').toString()).trim()
+def invitationEnabled = localConfig.getProperty('invite.enabled', 'false').toBoolean()
 
 android {
     namespace 'br.com.peladaleague.app'
@@ -22,6 +23,7 @@ android {
         // Publishable client values only. NEVER add service_role keys to local.properties or the APK.
         buildConfigField 'String','SUPABASE_URL',groovy.json.JsonOutput.toJson(publicUrl)
         buildConfigField 'String','SUPABASE_ANON_KEY',groovy.json.JsonOutput.toJson(publicKey)
+        buildConfigField 'boolean','INVITE_LINK_ENABLED', invitationEnabled ? 'true' : 'false'
     }
     compileOptions {
         coreLibraryDesugaringEnabled true
