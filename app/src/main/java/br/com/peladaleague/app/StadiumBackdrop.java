@@ -26,6 +26,7 @@ final class StadiumBackdrop extends Drawable {
         c.drawLine(0,h*.19f,0,h*.82f,p);
         p.setStyle(Paint.Style.FILL);
     }
+    @Override public void getOutline(Outline outline){Rect b=getBounds();outline.setRoundRect(b,Math.max(8f,b.width()*.04f));}
     @Override public void setAlpha(int alpha){}
     @Override public void setColorFilter(ColorFilter colorFilter){}
     @Override public int getOpacity(){return PixelFormat.OPAQUE;}
