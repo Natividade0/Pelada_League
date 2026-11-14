@@ -17,7 +17,23 @@ abstract class Screen {
     void heading(String s){Ui.heading(page,s);}
     void sub(String s){Ui.put(page,text(s,12,Ui.MUTED,false),6);}
     void button(String label,boolean primary,Runnable action){Ui.put(page,Ui.button(a,label,primary,action),10);}
-    void tabs(String[] names,int selected,java.util.function.IntConsumer onSelect){LinearLayout bar=Ui.row(a);bar.setPadding(Ui.dp(a,2),0,Ui.dp(a,2),0);bar.setBackground(Ui.round(a,0xFF242629,24,0));for(int i=0;i<names.length;i++){final int index=i;TextView tab=Ui.chip(a,names[i],i==selected,()->onSelect.accept(index));tab.setTextSize(names.length==4?11:12);if(i!=selected)tab.setBackgroundColor(Color.TRANSPARENT);tab.setContentDescription(names[i]+(i==selected?", selecionado":""));bar.addView(tab,new LinearLayout.LayoutParams(0,-2,1));}page.addView(bar);gap(12);}
+    void tabs(String[] names,int selected,java.util.function.IntConsumer onSelect){
+        LinearLayout bar=Ui.row(a);
+        bar.setPadding(Ui.dp(a,4),Ui.dp(a,4),Ui.dp(a,4),Ui.dp(a,4));
+        bar.setBackground(Ui.round(a,Ui.SURFACE,17,Ui.BORDER));
+        for(int i=0;i<names.length;i++){
+            final int index=i;
+            TextView tab=Ui.chip(a,names[i],i==selected,()->onSelect.accept(index));
+            tab.setTextSize(names.length>=4?11:12);
+            tab.setSingleLine(true);
+            tab.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            tab.setContentDescription(names[i]+(i==selected?", selecionado":""));
+            LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,-2,1);
+            lp.leftMargin=Ui.dp(a,1);lp.rightMargin=Ui.dp(a,1);
+            bar.addView(tab,lp);
+        }
+        page.addView(bar);gap(13);
+    }
     LinearLayout card(){return Ui.card(a);}
     void add(View v){Ui.put(page,v,0);}
     void pair(LinearLayout parent,View left,View right){LinearLayout row=Ui.row(a);row.setGravity(Gravity.TOP);LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(0,-2,1);p.rightMargin=Ui.dp(a,5);row.addView(left,p);LinearLayout.LayoutParams q=new LinearLayout.LayoutParams(0,-2,1);q.leftMargin=Ui.dp(a,5);row.addView(right,q);parent.addView(row);}
@@ -45,7 +61,38 @@ abstract class Screen {
         frame.addView(content,new FrameLayout.LayoutParams(-1,-2,Gravity.CENTER_VERTICAL));
         return frame;
     }
-    LinearLayout score(DemoDb.Game m){LinearLayout c=card(),row=Ui.row(a);for(int side=0;side<3;side++){if(side==1){TextView t=text(db.goals(m.id,0)+" × "+db.goals(m.id,1),32,Ui.WHITE,true);t.setGravity(Gravity.CENTER);row.addView(t,new LinearLayout.LayoutParams(0,-2,1));if(a.highlightScore)Motion.score(t);}else{String name=side==0?m.a:m.b;LinearLayout team=Ui.col(a);team.setGravity(Gravity.CENTER);team.addView(new SportArt(a,"shirt",a.teamColor(name)),Ui.lp(a,46,48));TextView label=text(name,12,Ui.WHITE,true);label.setGravity(Gravity.CENTER);Ui.put(team,label,4);row.addView(team,new LinearLayout.LayoutParams(0,-2,1));}}c.addView(row);a.highlightScore=false;return c;}
+    LinearLayout score(DemoDb.Game game){
+        LinearLayout board=card();
+        board.setPadding(Ui.dp(a,15),Ui.dp(a,17),Ui.dp(a,15),Ui.dp(a,17));
+        LinearLayout statusRow=Ui.row(a);
+        TextView title=text("PLACAR DA PARTIDA",11,Ui.GOLD,true);
+        statusRow.addView(title,new LinearLayout.LayoutParams(0,-2,1));
+        statusRow.addView(Ui.badge(a,gameStatus(game),false));
+        board.addView(statusRow);
+        Ui.space(board,16);
+        LinearLayout teams=Ui.row(a);
+        for(int i=0;i<3;i++){
+            if(i==1){
+                LinearLayout center=Ui.col(a);center.setGravity(Gravity.CENTER);
+                TextView goals=text(db.goals(game.id,0)+"  :  "+db.goals(game.id,1),30,Ui.WHITE,true);
+                goals.setGravity(Gravity.CENTER);center.addView(goals);
+                if(a.highlightScore)Motion.score(goals);
+                Ui.put(center,text("TEMPO NORMAL",10,Ui.MUTED,true),8);
+                teams.addView(center,new LinearLayout.LayoutParams(0,-2,1));
+            }else{
+                String team=i==0?game.a:game.b;
+                LinearLayout side=Ui.col(a);side.setGravity(Gravity.CENTER);
+                side.addView(new SportArt(a,"shirt",a.teamColor(team)),Ui.lp(a,43,47));
+                TextView name=text(team,12,Ui.WHITE,true);
+                name.setGravity(Gravity.CENTER);name.setMaxLines(2);
+                Ui.put(side,name,7);
+                teams.addView(side,new LinearLayout.LayoutParams(0,-2,1));
+            }
+        }
+        board.addView(teams);
+        a.highlightScore=false;
+        return board;
+    }
     String gameStatus(DemoDb.Game m){return m.status.equals("DRAFT")?"Em edição":m.status.equals("PENDING")?"Aguardando aprovação":"Validada · local";}
     void gameRow(LinearLayout parent,DemoDb.Game m){LinearLayout r=Ui.row(a);r.setMinimumHeight(Ui.dp(a,62));r.addView(new SportArt(a,"shirt",a.teamColor(m.a)),Ui.lp(a,30,34));LinearLayout name=Ui.col(a);name.setPadding(Ui.dp(a,9),0,Ui.dp(a,6),0);name.addView(text(m.a+" × "+m.b,12,Ui.WHITE,true));Ui.put(name,text(gameStatus(m),11,Ui.MUTED,false),4);r.addView(name,new LinearLayout.LayoutParams(0,-2,1));r.addView(text(db.goals(m.id,0)+" : "+db.goals(m.id,1),18,Ui.GOLD,true));Ui.tappable(r,()->a.openGame(m));parent.addView(r);}
     void share(String content){android.content.Intent i=new android.content.Intent(android.content.Intent.ACTION_SEND);i.setType("text/plain");i.putExtra(android.content.Intent.EXTRA_TEXT,content);a.startActivity(android.content.Intent.createChooser(i,"Compartilhar"));}
