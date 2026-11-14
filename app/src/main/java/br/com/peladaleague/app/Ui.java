@@ -14,11 +14,13 @@ import android.view.animation.OvershootInterpolator;
 import android.widget.*;
 import android.graphics.Typeface;
 
-/** Pelada League visual system V0.3. Dependency-free Android components. */
+/** Pelada League AMOLED / Amber visual system V0.7. Dependency-free native Android. */
 public final class Ui {
-    public static final int BG=Color.rgb(7,9,11), SURFACE=Color.rgb(18,19,22), RAISED=Color.rgb(29,30,33),
-        GOLD=Color.rgb(255,208,0), GOLD_DARK=Color.rgb(210,146,0), WHITE=Color.rgb(248,249,251),
-        MUTED=Color.rgb(167,170,177), BORDER=Color.rgb(62,61,58), GREEN=Color.rgb(111,228,153),RED=Color.rgb(243,92,88);
+    // True black for OLED pixels. Amber is warm rather than fluorescent yellow.
+    public static final int BG=0xFF000000, SURFACE=0xFF0D0D0F, RAISED=0xFF19191D,
+        GOLD=0xFFFFB52E, GOLD_DARK=0xFFE68E16, WHITE=0xFFF6F5F1,
+        MUTED=0xFFAAA9AD, BORDER=0xFF2C2B2E, GREEN=0xFF46D99A, RED=0xFFFF6572;
+    public static final int GOLD_TINT=0x22FFB52E, GOLD_STROKE=0x55FFB52E;
     private Ui(){}
     public static int dp(Context c,float v){return (int)(v*c.getResources().getDisplayMetrics().density+.5f);}
     public static LinearLayout col(Context c){LinearLayout l=new LinearLayout(c);l.setOrientation(LinearLayout.VERTICAL);return l;}
@@ -28,11 +30,11 @@ public final class Ui {
     public static void space(LinearLayout l,int h){View v=new View(l.getContext());l.addView(v,lp(l.getContext(),1,h));}
     public static TextView t(Context c,String content,int sp,int color,boolean bold){TextView v=new TextView(c);v.setText(content);v.setTextColor(color);v.setTextSize(sp);v.setIncludeFontPadding(false);v.setFontFeatureSettings("kern");v.setTypeface(Typeface.create(bold?"sans-serif-medium":"sans-serif",Typeface.NORMAL));v.setGravity(Gravity.CENTER_VERTICAL);v.setLetterSpacing(sp>=19?-.015f:0f);return v;}
     public static GradientDrawable round(Context c,int color,int radius,int stroke){GradientDrawable d=new GradientDrawable();d.setColor(color);d.setCornerRadius(dp(c,radius));if(stroke!=0)d.setStroke(dp(c,1),stroke);return d;}
-    public static GradientDrawable gradient(Context c,int radius){GradientDrawable d=new GradientDrawable(GradientDrawable.Orientation.TL_BR,new int[]{Color.rgb(45,43,36),Color.rgb(25,26,28),Color.rgb(16,17,19)});d.setCornerRadius(dp(c,radius));d.setStroke(dp(c,1),BORDER);return d;}
-    public static GradientDrawable gold(Context c,int radius){GradientDrawable d=new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,new int[]{Color.rgb(255,235,45),GOLD,Color.rgb(246,176,0)});d.setCornerRadius(dp(c,radius));return d;}
-    public static Drawable shimmer(Context c,int radius){GradientDrawable inner=new GradientDrawable(GradientDrawable.Orientation.TL_BR,new int[]{Color.rgb(33,35,36),Color.rgb(23,25,28),Color.rgb(16,18,21)});inner.setCornerRadius(dp(c,radius));inner.setStroke(dp(c,1),Color.rgb(66,64,56));GradientDrawable highlight=new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,new int[]{0x11FFFFFF,0x00FFFFFF});highlight.setCornerRadius(dp(c,radius));return new LayerDrawable(new Drawable[]{inner,highlight});}
-    public static LinearLayout card(Context c){LinearLayout l=col(c);l.setBackground(shimmer(c,14));l.setPadding(dp(c,12),dp(c,12),dp(c,12),dp(c,12));l.setElevation(dp(c,2));return l;}
-    public static LinearLayout surface(Context c){LinearLayout l=col(c);l.setBackground(round(c,SURFACE,14,BORDER));l.setPadding(dp(c,13),dp(c,13),dp(c,13),dp(c,13));return l;}
+    public static GradientDrawable gradient(Context c,int radius){GradientDrawable d=new GradientDrawable(GradientDrawable.Orientation.TL_BR,new int[]{0xFF181513,0xFF101011,0xFF09090A});d.setCornerRadius(dp(c,radius));d.setStroke(dp(c,1),BORDER);return d;}
+    public static GradientDrawable gold(Context c,int radius){GradientDrawable d=new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,new int[]{0xFFFFC455,GOLD,0xFFF69D1C});d.setCornerRadius(dp(c,radius));return d;}
+    public static Drawable shimmer(Context c,int radius){GradientDrawable inner=new GradientDrawable(GradientDrawable.Orientation.TL_BR,new int[]{0xFF19191B,0xFF101012,0xFF09090B});inner.setCornerRadius(dp(c,radius));inner.setStroke(dp(c,1),BORDER);return inner;}
+    public static LinearLayout card(Context c){LinearLayout l=col(c);l.setBackground(shimmer(c,18));l.setPadding(dp(c,16),dp(c,16),dp(c,16),dp(c,16));return l;}
+    public static LinearLayout surface(Context c){LinearLayout l=col(c);l.setBackground(round(c,SURFACE,18,BORDER));l.setPadding(dp(c,16),dp(c,16),dp(c,16),dp(c,16));return l;}
     public static boolean motionEnabled(Context c){try{return Settings.Global.getFloat(c.getContentResolver(),Settings.Global.ANIMATOR_DURATION_SCALE,1f)>0f;}catch(Exception e){return true;}}
     public static void enter(View view,int dy){if(!motionEnabled(view.getContext()))return;view.setAlpha(0f);view.setTranslationY(dp(view.getContext(),dy));view.animate().alpha(1f).translationY(0f).setInterpolator(new DecelerateInterpolator()).setDuration(300).start();}
     public static void pop(View view,int delay){if(!motionEnabled(view.getContext()))return;view.setScaleX(.91f);view.setScaleY(.91f);view.setAlpha(0f);view.animate().alpha(1f).scaleX(1f).scaleY(1f).setStartDelay(delay).setInterpolator(new OvershootInterpolator(.8f)).setDuration(280).start();}
@@ -49,18 +51,31 @@ public final class Ui {
         });
         v.setOnClickListener(x->{v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);click.run();});
     }
-    public static TextView button(Context c,String title,boolean filled,Runnable click){TextView v=new NeonButton(c,title,filled);v.setGravity(Gravity.CENTER);v.setMinHeight(dp(c,48));v.setPadding(dp(c,12),dp(c,10),dp(c,12),dp(c,10));v.setBackground(filled?gold(c,13):shimmer(c,13));v.setElevation(dp(c,filled?2:0));tappable(v,click);return v;}
-    public static TextView chip(Context c,String text,boolean selected,Runnable click){TextView v=t(c,text,12,selected?BG:MUTED,selected);v.setGravity(Gravity.CENTER);v.setMinHeight(dp(c,44));v.setPadding(dp(c,8),0,dp(c,8),0);v.setBackground(selected?gold(c,20):round(c,RAISED,20,0));if(click!=null)tappable(v,click);return v;}
-    public static TextView badge(Context c,String text,boolean selected){TextView v=t(c,text,11,selected?BG:GOLD, true);v.setGravity(Gravity.CENTER);v.setPadding(dp(c,11),dp(c,5),dp(c,11),dp(c,5));v.setBackground(selected?gold(c,20):round(c,0x302D260A,20,0x666B5516));return v;}
+    public static TextView button(Context c,String title,boolean filled,Runnable click){
+        TextView v=new NeonButton(c,title,filled);v.setGravity(Gravity.CENTER);v.setMinHeight(dp(c,52));
+        v.setPadding(dp(c,16),dp(c,12),dp(c,16),dp(c,12));
+        // Animated, accessible BLACK ink response on amber. No constant running neon.
+        Drawable base=filled?gold(c,15):round(c,SURFACE,15,GOLD_STROKE);
+        v.setBackground(new RippleDrawable(ColorStateList.valueOf(filled?0x66000000:GOLD_TINT),base,null));
+        tappable(v,click);return v;
+    }
+    public static TextView chip(Context c,String text,boolean selected,Runnable click){
+        TextView v=t(c,text,12,selected?BG:MUTED,selected);v.setGravity(Gravity.CENTER);
+        v.setMinHeight(dp(c,46));v.setPadding(dp(c,9),dp(c,8),dp(c,9),dp(c,8));
+        Drawable base=selected?gold(c,13):round(c,SURFACE,13,BORDER);
+        v.setBackground(new RippleDrawable(ColorStateList.valueOf(selected?0x44000000:GOLD_TINT),base,null));
+        if(click!=null)tappable(v,click);return v;
+    }
+    public static TextView badge(Context c,String text,boolean selected){TextView v=t(c,text,11,selected?BG:GOLD,true);v.setGravity(Gravity.CENTER);v.setPadding(dp(c,11),dp(c,6),dp(c,11),dp(c,6));v.setBackground(selected?gold(c,20):round(c,GOLD_TINT,20,GOLD_STROKE));return v;}
     public static void heading(LinearLayout parent,String text){TextView v=t(parent.getContext(),text,17,WHITE,true);parent.addView(v);space(parent,11);}
     public static void sub(LinearLayout parent,String text){TextView v=t(parent.getContext(),text,12,MUTED,false);parent.addView(v);}
-    public static void divider(LinearLayout l){View v=new View(l.getContext());v.setBackgroundColor(0x6655534C);LinearLayout.LayoutParams p=lp(l.getContext(),-1,1);p.topMargin=dp(l.getContext(),2);p.bottomMargin=dp(l.getContext(),2);l.addView(v,p);}
+    public static void divider(LinearLayout l){View v=new View(l.getContext());v.setBackgroundColor(BORDER);LinearLayout.LayoutParams p=lp(l.getContext(),-1,1);p.topMargin=dp(l.getContext(),7);p.bottomMargin=dp(l.getContext(),7);l.addView(v,p);}
     public static void put(LinearLayout parent,View child,int top){LinearLayout.LayoutParams p=lp(parent.getContext(),-1,-2);p.topMargin=dp(parent.getContext(),top);parent.addView(child,p);}
-    public static EditText input(Context c,String hint){EditText v=new EditText(c);v.setSingleLine(true);v.setTextSize(15);v.setTextColor(WHITE);v.setHintTextColor(MUTED);v.setHint(hint);v.setPadding(dp(c,14),dp(c,9),dp(c,14),dp(c,9));v.setBackground(round(c,RAISED,10,BORDER));return v;}
+    public static EditText input(Context c,String hint){EditText v=new EditText(c);v.setSingleLine(true);v.setTextSize(15);v.setMinHeight(dp(c,52));v.setTextColor(WHITE);v.setHintTextColor(MUTED);v.setHint(hint);v.setPadding(dp(c,14),dp(c,11),dp(c,14),dp(c,11));v.setBackground(round(c,RAISED,13,BORDER));return v;}
     public static void imageBackground(View v,int id){v.setBackgroundResource(id);}
     public static ImageView img(Context c,int drawable){ImageView i=new ImageView(c);i.setImageResource(drawable);i.setScaleType(ImageView.ScaleType.FIT_CENTER);return i;}
-    public static LinearLayout stat(Context c,String value,String label){LinearLayout l=col(c);l.setGravity(Gravity.CENTER);l.setPadding(dp(c,2),dp(c,12),dp(c,2),dp(c,12));l.setBackground(shimmer(c,13));TextView n=t(c,value,22,WHITE,true);n.setGravity(Gravity.CENTER);TextView d=t(c,label,10,MUTED,false);d.setGravity(Gravity.CENTER);l.addView(n);space(l,3);l.addView(d);return l;}
-    public static TextView initials(Context c,String name,int size){String[] tokens=name.trim().split("\\s+");String ini=tokens.length>1?tokens[0].substring(0,1)+tokens[tokens.length-1].substring(0,1):name.substring(0,1);TextView v=t(c,ini.toUpperCase(java.util.Locale.ROOT),size/3,GOLD,true);v.setGravity(Gravity.CENTER);v.setBackground(round(c,0xFF282722,100,0xFF8D7432));return v;}
+    public static LinearLayout stat(Context c,String value,String label){LinearLayout l=col(c);l.setGravity(Gravity.CENTER);l.setPadding(dp(c,6),dp(c,16),dp(c,6),dp(c,16));l.setBackground(shimmer(c,15));TextView n=t(c,value,24,GOLD,true);n.setGravity(Gravity.CENTER);TextView d=t(c,label,11,MUTED,false);d.setGravity(Gravity.CENTER);l.addView(n);space(l,6);l.addView(d);return l;}
+    public static TextView initials(Context c,String name,int size){String[] tokens=name.trim().split("\\s+");String ini=tokens.length>1?tokens[0].substring(0,1)+tokens[tokens.length-1].substring(0,1):name.substring(0,1);TextView v=t(c,ini.toUpperCase(java.util.Locale.ROOT),size/3,GOLD,true);v.setGravity(Gravity.CENTER);v.setBackground(round(c,0xFF24201A,100,GOLD_STROKE));return v;}
     /** Hand-drawn, scalable sport glyphs: no emoji fonts or asset dependencies. */
     public static final class Icon extends View{
         private final String kind;private final Paint p=new Paint(3);private final int color;private final Picture picture=new Picture();
