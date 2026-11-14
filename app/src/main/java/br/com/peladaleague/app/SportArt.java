@@ -16,10 +16,10 @@ public final class SportArt extends View {
     private void drawArt(Canvas c){
         if(kind.equals("crest")){
             Path crown=path(24,23,20,7,34,16,38,3,50,15,62,3,66,16,80,7,76,23);
-            metal(20,0,75,30,0xFFAD750B,0xFFFFE27A,0xFFFFD000,0xFFC38B13);c.drawPath(crown,p);
+            metal(20,0,75,30,0xFF925416,0xFFFFC16B,0xFFFFB52E,0xFFCA7716);c.drawPath(crown,p);
             Path shield=new Path();shield.moveTo(50,27);shield.cubicTo(66,34,76,34,89,31);shield.lineTo(84,64);shield.cubicTo(80,81,65,91,50,98);shield.cubicTo(35,91,20,81,16,64);shield.lineTo(11,31);shield.cubicTo(24,34,34,34,50,27);shield.close();
-            metal(12,30,85,100,0xFFF9DC76,0xFFE8B41F,0xFF825109,0xFFFFD64B);c.drawPath(shield,p);
-            c.save();c.scale(.88f,.87f,50,59);fill(c,shield,0xFF12161A);p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(.8f);p.setColor(0xFF9B823D);c.drawPath(shield,p);c.restore();
+            metal(12,30,85,100,0xFFFFD48B,0xFFED9929,0xFF6D3709,0xFFFFB52E);c.drawPath(shield,p);
+            c.save();c.scale(.88f,.87f,50,59);fill(c,shield,0xFF101012);p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(.8f);p.setColor(0xFFC68C39);c.drawPath(shield,p);c.restore();
             p.setStyle(Paint.Style.FILL);p.setShader(new RadialGradient(40,45,35,new int[]{0xFFFFFFFF,0xFFE9ECEB,0xFF606769},null,Shader.TileMode.CLAMP));c.drawCircle(50,59,26,p);p.setShader(null);
             fill(c,path(50,46,62,54,58,68,43,68,38,54),0xFF161C21);
             p.setStyle(Paint.Style.STROKE);p.setColor(0xFF60696B);p.setStrokeWidth(.9f);
