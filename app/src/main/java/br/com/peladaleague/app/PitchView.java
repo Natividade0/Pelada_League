@@ -45,15 +45,15 @@ final class PitchView extends View {
         float radius=Ui.dp(getContext(),20),top=h*.15f,bottom=h*.92f;
         color(Ui.SURFACE);c.drawRoundRect(0,0,w,h,radius,radius,p);
         // Matte black pitch with tasteful amber borders, as requested.
-        color(0xFF060808);c.drawRoundRect(w*.035f,top,w*.965f,bottom,radius*.48f,radius*.48f,p);
+        color(0xFF060607);c.drawRoundRect(w*.035f,top,w*.965f,bottom,radius*.48f,radius*.48f,p);
         for(int i=0;i<8;i++){
-            if(i%2==0){color(0x100FAF72);
+            if(i%2==0){color(0x0CFFB52E);
                 float y1=top+i*(bottom-top)/8,y2=top+(i+1)*(bottom-top)/8;
                 c.drawRect(w*.039f,y1,w*.961f,y2,p);
             }
         }
         float left=w*.07f,right=w*.93f,fieldTop=top+h*.018f,fieldBottom=bottom-h*.024f;
-        line(0x667C8B80,Math.max(1.3f,w*.003f));
+        line(0x667E7770,Math.max(1.3f,w*.003f));
         c.drawRect(left,fieldTop,right,fieldBottom,p);
         c.drawLine(left,(fieldTop+fieldBottom)/2,right,(fieldTop+fieldBottom)/2,p);
         c.drawCircle(w*.5f,(fieldTop+fieldBottom)/2,w*.13f,p);
