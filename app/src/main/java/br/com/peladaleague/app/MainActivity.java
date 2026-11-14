@@ -146,9 +146,9 @@ public class MainActivity extends Activity {
     void confirm(String title,String message,Runnable yes){new AlertDialog.Builder(this).setTitle(title).setMessage(message).setNegativeButton("Cancelar",null).setPositiveButton("Confirmar",(d,w)->yes.run()).show();}
     void safely(Runnable r){try{r.run();}catch(IllegalArgumentException|IllegalStateException e){toast(e.getMessage()==null?"Não foi possível concluir. Confira os dados.":e.getMessage());}}
     void info(){new AlertDialog.Builder(this).setTitle("Pelada League · 0.7")
-        .setMessage("Visual AMOLED + âmbar. As peladas e súmulas de demonstração ficam neste aparelho.\\n\\n"
+        .setMessage("Visual AMOLED + âmbar. As peladas e súmulas de demonstração ficam neste aparelho.\n\n"
             +"Cadastro, convites e placar entre celulares exigem configurar o Supabase gratuito. "
-            +"Os PINs locais ainda não representam aprovação oficial por duas contas.\\n\\n"
+            +"Os PINs locais ainda não representam aprovação oficial por duas contas.\n\n"
             +"Modo local atual: "+role+". Sem compra ou assinatura obrigatória.")
         .setPositiveButton("Entendi",null)
         .setNeutralButton("Ver tutorial",(d,w)->{tab("home");onboarding.start();})
