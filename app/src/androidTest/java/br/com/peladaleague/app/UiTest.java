@@ -62,6 +62,15 @@ public final class UiTest extends InstrumentationTestCase {
         ui(()->{a.groupId=1;a.db.setCapacity(1,14);for(int i=1;i<=10;i++)a.db.markAttendance(1,i,DemoDb.CONFIRMED);a.refresh();});top();screenshot("02-home");
         click("Sua próxima partida");assertEquals("group",a.route);top();screenshot("03-group");click("Sortear times");assertEquals("draw",a.route);click("Sortear Times");
         for(int i=0;i<100&&a.drawBusy;i++)SystemClock.sleep(200);assertFalse("Draw worker did not finish",a.drawBusy);getInstrumentation().waitForIdleSync();assertEquals(2,a.db.savedDraw(1).size());top();screenshot("04-draw");
+        ui(()->{
+            View formation=a.tutorialTargets.get("draw_pitch");
+            assertNotNull("Formation pitch missing after saved draw",formation);
+            android.graphics.Rect rect=new android.graphics.Rect();
+            formation.getDrawingRect(rect);
+            a.scroll.offsetDescendantRectToMyCoords(formation,rect);
+            a.scroll.scrollTo(0,Math.max(0,rect.top-Ui.dp(a,22)));
+        });
+        screenshot("04b-formation");
         click("Criar partida com os times");assertEquals("match",a.route);assertTrue(a.db.roster(a.gameId,0).size()>=2);
         ui(()->{List<DemoDb.Player> x=a.db.roster(a.gameId,0),y=a.db.roster(a.gameId,1);a.db.addGoal(a.gameId,x.get(0).id,0,12,x.get(1).id,false);a.db.addGoal(a.gameId,y.get(0).id,1,18,0,false);a.db.addGoal(a.gameId,x.get(1).id,0,24,0,false);a.db.addCard(a.gameId,y.get(1).id,1,"YELLOW",22);a.refresh();});top();screenshot("05-match");
         click("Cartões");assertEquals(1,a.matchTab);click("Gols");assertEquals(0,a.matchTab);
