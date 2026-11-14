@@ -77,7 +77,7 @@ abstract class Screen {
                 TextView goals=text(db.goals(game.id,0)+"  :  "+db.goals(game.id,1),30,Ui.WHITE,true);
                 goals.setGravity(Gravity.CENTER);center.addView(goals);
                 if(a.highlightScore)Motion.score(goals);
-                Ui.put(center,text("TEMPO NORMAL",10,Ui.MUTED,true),8);
+                Ui.put(center,text("DEMO_APPROVED".equals(game.status)?"RESULTADO LOCAL":"PLACAR PROVISÓRIO",10,Ui.MUTED,true),8);
                 teams.addView(center,new LinearLayout.LayoutParams(0,-2,1));
             }else{
                 String team=i==0?game.a:game.b;
