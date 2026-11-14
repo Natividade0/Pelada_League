@@ -39,15 +39,8 @@ abstract class Screen {
             }
         };
         frame.setMinimumHeight(Ui.dp(a,minimum));
-        frame.setBackground(Ui.round(a,Ui.SURFACE,15,Ui.BORDER));
+        frame.setBackground(new StadiumBackdrop());
         frame.setClipToOutline(true);
-        ImageView image=Ui.img(a,R.drawable.stadium_night);
-        image.setScaleType(ImageView.ScaleType.CENTER_CROP);
-        frame.addView(image,new FrameLayout.LayoutParams(-1,-1));
-        View dim=new View(a);
-        dim.setBackground(new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
-            new int[]{dark?0xF207090B:0xDF07090B,0x9907090B,0x2207090B}));
-        frame.addView(dim,new FrameLayout.LayoutParams(-1,-1));
         content.setPadding(Ui.dp(a,14),Ui.dp(a,13),Ui.dp(a,14),Ui.dp(a,13));
         frame.addView(content,new FrameLayout.LayoutParams(-1,-2,Gravity.CENTER_VERTICAL));
         return frame;
