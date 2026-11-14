@@ -2,6 +2,10 @@
 # Pelada League v0.3: update the already expanded 0.2 project without touching SQLite.
 set -eu
 cd "$(dirname "$0")"
+if [ -f app/build.gradle ] && grep -q "0.4.0-alpha" app/build.gradle; then
+  echo "Projeto 0.4 preservado. Atualizadores antigos não se aplicam."
+  exit 0
+fi
 if [ ! -f app/build.gradle ]; then
   echo "Projeto Android nao extraido. Execute sh bootstrap.sh e sh apply-v02.sh primeiro."
   exit 1

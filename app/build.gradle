@@ -1,0 +1,40 @@
+plugins { id 'com.android.application' }
+
+def localConfig = new Properties()
+def localFile = rootProject.file('local.properties')
+if (localFile.exists()) localFile.withInputStream { localConfig.load(it) }
+def publicUrl = localConfig.getProperty('supabase.url', (project.findProperty('supabase.url') ?: '').toString()).trim()
+def publicKey = localConfig.getProperty('supabase.anonKey', (project.findProperty('supabase.anonKey') ?: '').toString()).trim()
+def invitationEnabled = localConfig.getProperty('invite.enabled', 'false').toBoolean()
+
+android {
+    namespace 'br.com.peladaleague.app'
+    useLibrary 'android.test.runner'
+    useLibrary 'android.test.base'
+    buildFeatures { buildConfig true }
+    compileSdk 35
+    defaultConfig {
+        applicationId 'br.com.peladaleague.app'
+        minSdk 26
+        targetSdk 35
+        versionCode 8
+        versionName '0.7.0-alpha'
+        testInstrumentationRunner 'android.test.InstrumentationTestRunner'
+        // Publishable client values only. NEVER add service_role keys to local.properties or the APK.
+        buildConfigField 'String','SUPABASE_URL',groovy.json.JsonOutput.toJson(publicUrl)
+        buildConfigField 'String','SUPABASE_ANON_KEY',groovy.json.JsonOutput.toJson(publicKey)
+        buildConfigField 'boolean','INVITE_LINK_ENABLED', invitationEnabled ? 'true' : 'false'
+    }
+    compileOptions {
+        coreLibraryDesugaringEnabled true
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    buildTypes {
+        release { minifyEnabled false }
+    }
+}
+dependencies {
+    implementation project(':core')
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
+}

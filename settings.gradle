@@ -1,32 +1,4 @@
-pluginManagement {
-    repositories {
-        google()
-        mavenCentral()
-        gradlePluginPortal()
-    }
-}
-
-// The first checkout can arrive as a verified compact source archive.
-// The regular settings.gradle will replace this bootstrap file after extraction.
-if (!new File(settingsDir, 'app/build.gradle').isFile()) {
-    def runner = new ProcessBuilder('sh', 'bootstrap.sh')
-            .directory(settingsDir)
-            .redirectErrorStream(true)
-            .start()
-    def result = runner.inputStream.getText('UTF-8')
-    int exitCode = runner.waitFor()
-    println(result)
-    if (exitCode != 0) {
-        throw new GradleException('Não foi possível preparar Pelada League. Execute sh bootstrap.sh no terminal ou rode o workflow Import Pelada League Android source no GitHub.')
-    }
-}
-
-dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-    repositories {
-        google()
-        mavenCentral()
-    }
-}
+pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
+dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }
 rootProject.name = 'PeladaLeague'
 include ':app', ':core'
