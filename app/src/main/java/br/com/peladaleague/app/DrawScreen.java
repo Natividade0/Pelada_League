@@ -43,7 +43,8 @@ final class DrawScreen extends Screen {
                 .setPositiveButton("Fechar",null).show());
         }
         pitchScroller.addView(fields,new HorizontalScrollView.LayoutParams(-2,-2));
-        add(pitchScroller);
+        pitchScroller.setContentDescription("Escalações no campo. Deslize para os outros times.");
+        add(a.mark("draw_pitch",pitchScroller));
         sub("Deslize para o lado e veja os times no campo. Toque para consultar os nomes.");
         gap(12);heading("Times sorteados");
         LinearLayout result=Ui.col(a);
