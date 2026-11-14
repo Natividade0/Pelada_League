@@ -28,23 +28,20 @@ final class Onboarding {
         }
     }
 
+    /** Six short steps. Reopen any time from the information menu. */
     private static final Step[] STEPS = {
-        new Step("home", "home_match", "Sua próxima partida",
-            "Aqui aparecem o dia, o local e as vagas. Toque no cartão para entrar no grupo e confirmar sua presença."),
-        new Step("home", "home_groups", "Organize suas peladas",
-            "Crie um grupo, cadastre jogadores e organize os encontros. Nesta versão, tudo é salvo no próprio aparelho."),
-        new Step("groups", "groups_first", "Escolha sua pelada",
-            "Abra um dos grupos cadastrados. O organizador também pode criar um grupo novo com local e horário próprios."),
-        new Step("group", "group_presence", "Confirme quem vai jogar",
-            "A presença é por sessão. Somente jogadores confirmados entram no sorteio; quem exceder as vagas vai para a espera."),
-        new Step("attendance", "attendance_roster", "Gerencie a lista de presença",
-            "Confira as confirmações e a lista de espera. Quando abre uma vaga, o primeiro da espera é promovido."),
-        new Step("draw", "draw_action", "Sorteie times equilibrados",
-            "Selecione jogadores confirmados e sorteie de dois a quatro times. O equilíbrio considera posição, habilidade e goleiros."),
-        new Step("league", "league_header", "Acompanhe seu campeonato",
-            "A classificação, a artilharia e os jogos aparecem aqui após as súmulas serem validadas localmente."),
-        new Step("profile", "profile_header", "Construa sua carreira",
-            "Consulte jogos, gols e assistências, edite seu jogador e acompanhe o histórico. A versão online ainda está em desenvolvimento.")
+        new Step("home","home_match","Sua próxima partida",
+            "Veja horário, local e vagas. Toque no cartão para abrir sua pelada."),
+        new Step("home","home_groups","Suas peladas em um lugar",
+            "Abra seus grupos, cadastre os amigos e organize os jogos."),
+        new Step("group","group_presence","Quem vai jogar?",
+            "Confirme os presentes. Se a lista estiver cheia, o aplicativo organiza a espera."),
+        new Step("draw","draw_action","Times prontos em segundos",
+            "Selecione os confirmados e sorteie equipes. Veja a escalação no campinho."),
+        new Step("league","league_header","Classificação e premiações",
+            "Acompanhe artilharia, temporadas e resultados registrados."),
+        new Step("profile","profile_header","Sua carreira no futebol",
+            "Veja seus jogos, gols e histórico. Você pode repetir este guia no menu de informações.")
     };
 
     private final MainActivity a;
@@ -166,16 +163,16 @@ final class Onboarding {
         overlay.addView(mask,new FrameLayout.LayoutParams(-1,-1));
 
         LinearLayout tip=Ui.col(a);
-        tip.setBackground(Ui.round(a,0xFF1D2023,19,0xFFAB8623));
+        tip.setBackground(Ui.round(a,0xFF121214,20,Ui.GOLD_STROKE));
         tip.setPadding(Ui.dp(a,17),Ui.dp(a,15),Ui.dp(a,17),Ui.dp(a,16));
         tip.setElevation(Ui.dp(a,16));
-        TextView count=Ui.t(a,String.format(java.util.Locale.ROOT,"GUIA DO APP · %02d / %02d",current+1,STEPS.length),11,Ui.GOLD,true);
+        TextView count=Ui.t(a,String.format(java.util.Locale.ROOT,"SEU GUIA · %02d / %02d",current+1,STEPS.length),11,Ui.GOLD,true);
         tip.addView(count);
         Ui.space(tip,7);
         tip.addView(Ui.t(a,expected.title,19,Ui.WHITE,true));
         Ui.space(tip,8);
         TextView description=Ui.t(a,expected.description,13,Ui.WHITE,false);
-        description.setLineSpacing(Ui.dp(a,3),1f);
+        description.setLineSpacing(Ui.dp(a,4),1f);
         tip.addView(description);
         Ui.space(tip,15);
 
@@ -225,7 +222,7 @@ final class Onboarding {
         Spotlight(MainActivity a,RectF area) {
             super(a);
             hole=new RectF(area);
-            dim.setColor(0xD807090B);
+            dim.setColor(0xE5000000);
             clear.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
             ring.setColor(Ui.GOLD);
             ring.setStyle(Paint.Style.STROKE);
