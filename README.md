@@ -1,10 +1,10 @@
-# Pelada League · 0.6.0-alpha
+# Pelada League · 0.7.0-alpha
 
-> **Versão 0.6: temporadas e premiações locais, eventos semanais, lembretes opcionais e placar compartilhado preparado para Supabase gratuito.** O controle financeiro manual, isenção dos goleiros, cronômetro, substituições e apresentação tática animada agora possuem código nativo. Cadastro e eventos online usam autenticação/Supabase e só funcionam depois de criar e configurar um projeto Free e SMTP adequados. Sem servidor conectado o modo local continua disponível. Não há compras nem assinaturas. **[Guia de implantação da 0.6](docs/ATUALIZACAO_0.6.md)**.
+> **Versão 0.7: redesign Android nativo em preto AMOLED e âmbar.** Botões com resposta escura sem neon giratório, home esportiva, placar premium, escalações em campo com camisetas vetoriais e tutorial guiado preservado. Todas as funções locais da 0.6 continuam presentes. O online exige configurar o Supabase Free. **[Guia da 0.7](docs/ATUALIZACAO_0.7.md)**.
 
 Aplicativo Android nativo para organizar peladas, confirmar presenças, sortear equipes e registrar partidas. Esta atualização reconstrói as oito telas da direção visual preto/dourado e mantém o banco SQLite da versão anterior.
 
-**É uma demonstração local funcional.** Não há login online, sincronização entre celulares ou validação oficial de identidades. Jogador cadastrado localmente não é uma conta autenticada. A tabela usa somente súmulas validadas na demonstração; gols contra não entram na artilharia.
+**O modo local é uma demonstração funcional.** As telas online precisam de Supabase gratuito configurado; ainda não há aprovação oficial por duas identidades autenticadas. Jogador cadastrado localmente não é uma conta autenticada. A tabela usa somente súmulas validadas na demonstração; gols contra não entram na artilharia.
 
 ## Instalar e atualizar no Code on the Go
 
@@ -41,11 +41,11 @@ sh scripts/test-core.sh
 ```
 
 APK: `app/build/outputs/apk/debug/app-debug.apk`.
-No GitHub: **Actions → Android 0.4 · build and device tests → artefato PeladaLeague-0.4-debug**.
+No GitHub: **Actions → build and device tests → artefato PeladaLeague-0.7-debug**.
 
-## Interface 0.4.1 e primeiro uso
+## Visual 0.7 AMOLED e primeiro uso
 
-- Tour de oito etapas contextualizadas com destaque nos controles reais, botão Pular, Voltar, Próximo e Concluir.
+- Tour de seis etapas contextualizadas com destaque nos controles reais, botão Pular, Voltar, Próximo e Concluir.
 - O tour aparece uma vez após a entrada na tela inicial. Para rever: **Informações → Ver tutorial**.
 - Animação de luz dourada circulante nos botões principais e respiração discreta no escudo da página inicial; efeitos cancelados ao sair da tela e desativados se o Android desabilitar animações.
 - Se houver menos de quatro jogadores confirmados, a tela inicial oferece **Preparar a partida** para levar diretamente às presenças.
