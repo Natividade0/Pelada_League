@@ -8,121 +8,133 @@ import android.view.animation.DecelerateInterpolator;
 import java.util.*;
 
 /**
- * Native perspective formation pitch. Fully original 2.5D vector rendering,
- * no real 3D engine or licensed club artwork. Player reveal respects reduced motion.
+ * Original AMOLED tactical line-up graphic inspired by match-day graphics.
+ * Real confirmed players, their roles and team colors; no invented jersey numbers.
+ * Lightweight native Canvas: not a 3D scene.
  */
 final class PitchView extends View {
     private final List<DemoDb.Player> players;
     private final String team;
     private final int teamColor;
     private final Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);
-    private float reveal=1f;
     private ValueAnimator animator;
+    private float reveal=1f;
     PitchView(Context context,String name,int color,List<DemoDb.Player> squad){
         super(context);team=name;teamColor=color;players=new ArrayList<>(squad);
-        setContentDescription("Campo tático de "+name+" com "+players.size()+" jogadores");
-        setLayerType(LAYER_TYPE_SOFTWARE,null);
+        StringBuilder description=new StringBuilder("Escalação de ").append(name).append(": ");
+        for(DemoDb.Player player:players)description.append(player.name).append(", ").append(player.pos).append("; ");
+        setContentDescription(description.toString());
+        setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_YES);
     }
-    @Override protected void onMeasure(int widthMeasureSpec,int heightMeasureSpec){
-        int w=MeasureSpec.getSize(widthMeasureSpec);
-        if(w==0)w=Ui.dp(getContext(),310);
-        int desired=(int)(w*.95f);
-        setMeasuredDimension(resolveSize(w,widthMeasureSpec),
-            resolveSize(Math.max(Ui.dp(getContext(),250),desired),heightMeasureSpec));
+    @Override protected void onMeasure(int wSpec,int hSpec){
+        int width=MeasureSpec.getSize(wSpec);
+        if(width<=0)width=Ui.dp(getContext(),320);
+        int desired=Math.max(Ui.dp(getContext(),315),Math.round(width*1.20f));
+        setMeasuredDimension(resolveSize(width,wSpec),resolveSize(desired,hSpec));
     }
-    private void stroke(int color,float width){
-        p.setShader(null);p.setStyle(Paint.Style.STROKE);p.setColor(color);p.setStrokeWidth(width);
+    private void color(int color){
+        p.setShader(null);p.clearShadowLayer();p.setStyle(Paint.Style.FILL);p.setColor(color);
     }
-    private void fill(int color){p.setShader(null);p.setStyle(Paint.Style.FILL);p.setColor(color);}
-    private Path shape(float... xy){
-        Path z=new Path();z.moveTo(xy[0],xy[1]);for(int i=2;i<xy.length;i+=2)z.lineTo(xy[i],xy[i+1]);z.close();return z;
-    }
-    private float left(float y,float w,float h){
-        float t=(y-h*.12f)/(h*.80f);return w*(.17f-.13f*Math.max(0,Math.min(1,t)));
-    }
-    private float right(float y,float w,float h){return w-left(y,w,h);}
-    private float textWidth(String name,float size){
-        p.setTextSize(size);return p.measureText(name);
+    private void line(int color,float width){
+        color(color);p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(width);
+        p.setStrokeCap(Paint.Cap.ROUND);p.setStrokeJoin(Paint.Join.ROUND);
     }
     @Override protected void onDraw(Canvas c){
-        super.onDraw(c);float w=getWidth(),h=getHeight();if(w<=0||h<=0)return;
-        int layer=c.saveLayer(0,0,w,h,null);
-        fill(0xFF0E1318);c.drawRoundRect(0,0,w,h,Ui.dp(getContext(),16),Ui.dp(getContext(),16),p);
-        p.setShader(new LinearGradient(0,0,0,h,new int[]{0xFF102124,0xFF172E25,0xFF071C1B},null,Shader.TileMode.CLAMP));
-        c.drawRoundRect(1,1,w-1,h-1,Ui.dp(getContext(),16),Ui.dp(getContext(),16),p);p.setShader(null);
-        // Floodlights above the pitch.
-        for(int i=0;i<6;i++){
-            float x=w*(.12f+i*.15f);
-            p.setShader(new RadialGradient(x,h*.055f,w*.15f,
-                new int[]{0x44FFE2A2,0x07FFE2A2,0x00FFFFFF},null,Shader.TileMode.CLAMP));
-            c.drawCircle(x,h*.055f,w*.15f,p);
-        }
-        p.setShader(null);
-        fill(0xFF163D28);c.drawPath(shape(w*.17f,h*.12f,w*.83f,h*.12f,w*.96f,h*.91f,w*.04f,h*.91f),p);
-        // Stripes follow the field perspective.
+        super.onDraw(c);
+        float w=getWidth(),h=getHeight();if(w<1||h<1)return;
+        float radius=Ui.dp(getContext(),20),top=h*.15f,bottom=h*.92f;
+        color(Ui.SURFACE);c.drawRoundRect(0,0,w,h,radius,radius,p);
+        // Matte black pitch with tasteful amber borders, as requested.
+        color(0xFF060808);c.drawRoundRect(w*.035f,top,w*.965f,bottom,radius*.48f,radius*.48f,p);
         for(int i=0;i<8;i++){
-            float top=h*(.12f+i*.10f),bottom=top+h*.10f;
-            if(i%2==0){fill(0x2516C576);c.drawPath(shape(left(top,w,h),top,right(top,w,h),top,
-                right(bottom,w,h),bottom,left(bottom,w,h),bottom),p);}
-        }
-        stroke(0x90E4EDE4,Math.max(1f,w*.003f));
-        c.drawPath(shape(w*.17f,h*.12f,w*.83f,h*.12f,w*.96f,h*.91f,w*.04f,h*.91f),p);
-        c.drawLine(left(h*.52f,w,h),h*.52f,right(h*.52f,w,h),h*.52f,p);
-        c.drawOval(w*.36f,h*.47f,w*.64f,h*.57f,p);
-        c.drawRect(w*.39f,h*.12f,w*.61f,h*.18f,p);
-        c.drawRect(w*.34f,h*.85f,w*.66f,h*.91f,p);
-        // Night stadium caption.
-        fill(0xFFFAFAFC);p.setTypeface(Typeface.create("sans-serif-medium",Typeface.BOLD));
-        p.setTextSize(w*.047f);
-        c.drawText(team,w*.06f,h*.075f,p);
-        fill(0xFFFFD000);p.setTextSize(w*.03f);
-        c.drawText("ESCALAÇÃO • "+players.size()+" JOGADORES",w*.06f,h*.975f,p);
-        // Group players by primary roles; labels reveal in a stagger.
-        Map<Integer,List<DemoDb.Player>> byBand=new TreeMap<>();
-        for(DemoDb.Player player:players){
-            int band="GOL".equals(player.pos)?0:"ZAG".equals(player.pos)?1:"MEI".equals(player.pos)?2:3;
-            byBand.computeIfAbsent(band,k->new ArrayList<>()).add(player);
-        }
-        int index=0;
-        for(Map.Entry<Integer,List<DemoDb.Player>> entry:byBand.entrySet()){
-            int band=entry.getKey();List<DemoDb.Player> row=entry.getValue();
-            float y=h*(.79f-band*.19f);
-            float x1=left(y,w,h)+w*.075f,x2=right(y,w,h)-w*.075f;
-            for(int i=0;i<row.size();i++){
-                float x=x1+(x2-x1)*(i+1)/(row.size()+1);
-                float alpha=Math.max(0,Math.min(1,(reveal-index*.085f)*1.8f));
-                if(alpha>0)player(c,row.get(i),x,y,w,h,alpha);
-                index++;
+            if(i%2==0){color(0x100FAF72);
+                float y1=top+i*(bottom-top)/8,y2=top+(i+1)*(bottom-top)/8;
+                c.drawRect(w*.039f,y1,w*.961f,y2,p);
             }
         }
-        c.restoreToCount(layer);
+        float left=w*.07f,right=w*.93f,fieldTop=top+h*.018f,fieldBottom=bottom-h*.024f;
+        line(0x667C8B80,Math.max(1.3f,w*.003f));
+        c.drawRect(left,fieldTop,right,fieldBottom,p);
+        c.drawLine(left,(fieldTop+fieldBottom)/2,right,(fieldTop+fieldBottom)/2,p);
+        c.drawCircle(w*.5f,(fieldTop+fieldBottom)/2,w*.13f,p);
+        c.drawRect(w*.31f,fieldTop,w*.69f,fieldTop+(fieldBottom-fieldTop)*.15f,p);
+        c.drawRect(w*.40f,fieldTop,w*.60f,fieldTop+(fieldBottom-fieldTop)*.055f,p);
+        c.drawRect(w*.31f,fieldBottom-(fieldBottom-fieldTop)*.15f,w*.69f,fieldBottom,p);
+        c.drawRect(w*.40f,fieldBottom-(fieldBottom-fieldTop)*.055f,w*.60f,fieldBottom,p);
+        line(Ui.GOLD,Math.max(2f,w*.007f));
+        c.drawLine(w*.065f,fieldTop,w*.065f,fieldTop+h*.09f,p);
+        // Header is intentionally inside the black card, not a bright stadium photograph.
+        color(Ui.GOLD);p.setTypeface(Typeface.create("sans-serif-medium",Typeface.BOLD));
+        p.setTextSize(w*.030f);p.setTextAlign(Paint.Align.LEFT);
+        c.drawText("ESCALAÇÃO EM CAMPO",w*.055f,h*.055f,p);
+        color(Ui.WHITE);p.setTextSize(w*.056f);
+        c.drawText(team,w*.055f,h*.119f,p);
+        color(Ui.GOLD);p.setTextSize(w*.028f);
+        c.drawText(players.size()+" JOGADORES SORTEADOS",w*.055f,h*.975f,p);
+        // Keep the goalkeeper downfield and the forwards upfield, as in match graphics.
+        Map<Integer,List<DemoDb.Player>> bands=new TreeMap<>();
+        for(DemoDb.Player player:players){
+            int band="GOL".equals(player.pos)?0:"ZAG".equals(player.pos)?1:
+                "MEI".equals(player.pos)?2:3;
+            bands.computeIfAbsent(band,k->new ArrayList<>()).add(player);
+        }
+        int count=0;
+        for(Map.Entry<Integer,List<DemoDb.Player>> e:bands.entrySet()){
+            int band=e.getKey();List<DemoDb.Player> row=e.getValue();
+            float y=fieldTop+(fieldBottom-fieldTop)*(.83f-band*.21f);
+            float widthAvailable=(right-left)*.91f;
+            for(int i=0;i<row.size();i++){
+                float x=w*.5f+widthAvailable*((i+.5f)/row.size()-.5f);
+                float alpha=Math.max(0,Math.min(1,(reveal-count*.085f)*1.6f));
+                if(alpha>0)drawPlayer(c,row.get(i),x,y,w,alpha,row.size());
+                count++;
+            }
+        }
+        p.setTextAlign(Paint.Align.LEFT);p.setStyle(Paint.Style.FILL);
     }
-    private void player(Canvas c,DemoDb.Player player,float x,float y,float w,float h,float opacity){
-        int save=c.save();c.scale(.65f+opacity*.35f,.65f+opacity*.35f,x,y);
-        int radius=(int)Math.max(13,w*.037f);
-        p.setShader(new RadialGradient(x,y,radius*2,
-            new int[]{0x99FFE998,0x00F3CD21},null,Shader.TileMode.CLAMP));
-        c.drawCircle(x,y,radius*2,p);p.setShader(null);
-        fill(0xFF10151A);c.drawCircle(x,y,radius+2,p);
-        fill(teamColor);c.drawCircle(x,y,radius,p);
-        stroke(0xFFF3EBB4,Math.max(1,w*.004f));c.drawCircle(x,y,radius,p);
-        fill(0xFF101318);p.setTypeface(Typeface.create("sans-serif",Typeface.BOLD));
-        p.setTextAlign(Paint.Align.CENTER);p.setTextSize(radius*.86f);
-        String initials=player.name.isEmpty()?"?":player.name.substring(0,1).toUpperCase(Locale.ROOT);
-        c.drawText(initials,x,y+radius*.31f,p);
-        String name=player.name.length()>10?player.name.substring(0,9)+"…":player.name;
-        float font=Math.max(9,w*.034f);p.setTextSize(font);p.setTypeface(Typeface.create("sans-serif-medium",Typeface.BOLD));
-        p.setShadowLayer(5,0,1,0xFF000000);
-        fill(0xFFF8F9FB);p.setTextAlign(Paint.Align.CENTER);p.setTextSize(font);
-        c.drawText(name,x,y+radius+font*1.2f,p);
-        p.clearShadowLayer();p.setTextAlign(Paint.Align.LEFT);c.restoreToCount(save);
+    private void drawPlayer(Canvas c,DemoDb.Player player,float x,float y,float width,float opacity,int rowSize){
+        int saved=c.saveLayerAlpha(x-55,y-50,x+55,y+72,(int)(opacity*255));
+        float scale=Math.max(.72f,Math.min(1f,4f/rowSize));
+        c.save();c.translate(x,y);c.scale(scale,scale);
+        float jersey=width*.059f;
+        color(0x99000000);p.setShadowLayer(8,0,4,0xBB000000);
+        Path shirt=new Path();
+        shirt.moveTo(-jersey*.56f,-jersey*.58f);
+        shirt.lineTo(-jersey*1.04f,-jersey*.24f);
+        shirt.lineTo(-jersey*1.24f,jersey*.49f);
+        shirt.lineTo(-jersey*.68f,jersey*.67f);
+        shirt.lineTo(-jersey*.58f,jersey*.26f);
+        shirt.lineTo(-jersey*.58f,jersey*1.12f);
+        shirt.lineTo(jersey*.58f,jersey*1.12f);
+        shirt.lineTo(jersey*.58f,jersey*.26f);
+        shirt.lineTo(jersey*.68f,jersey*.67f);
+        shirt.lineTo(jersey*1.24f,jersey*.49f);
+        shirt.lineTo(jersey*1.04f,-jersey*.24f);
+        shirt.lineTo(jersey*.56f,-jersey*.58f);
+        shirt.quadTo(0,-jersey*.13f,-jersey*.56f,-jersey*.58f);
+        shirt.close();
+        boolean dark=(teamColor&0x00FFFFFF)<0x00707070;
+        color(dark?0xFF292B30:teamColor);c.drawPath(shirt,p);p.clearShadowLayer();
+        line(dark?Ui.GOLD:0xFFFAF6EB,Math.max(1.5f,width*.004f));c.drawPath(shirt,p);
+        color(dark?Ui.GOLD:Ui.BG);p.setTextAlign(Paint.Align.CENTER);
+        p.setTypeface(Typeface.create("sans-serif-condensed",Typeface.BOLD));
+        p.setTextSize(jersey*.62f);
+        c.drawText(player.pos,0,jersey*.52f,p);
+        color(Ui.WHITE);p.setTypeface(Typeface.create("sans-serif-medium",Typeface.BOLD));
+        String first=player.name.trim().split(" ")[0];
+        String name=first.length()>10?first.substring(0,9)+"…":first;
+        float font=Math.max(10,width*.029f);
+        p.setTextSize(font);
+        // Labels are against a dark, unobstructed part of the pitch.
+        c.drawText(name,0,jersey*1.72f,p);
+        c.restore();c.restoreToCount(saved);
     }
     @Override protected void onAttachedToWindow(){
         super.onAttachedToWindow();
         if(!Motion.enabled())return;
         reveal=0;
-        animator=ValueAnimator.ofFloat(0,1f);
-        animator.setDuration(1050);animator.setInterpolator(new DecelerateInterpolator());
+        animator=ValueAnimator.ofFloat(0f,1f);
+        animator.setDuration(820);animator.setInterpolator(new DecelerateInterpolator());
         animator.addUpdateListener(v->{reveal=(float)v.getAnimatedValue();invalidate();});
         animator.start();
     }
