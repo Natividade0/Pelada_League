@@ -102,12 +102,12 @@ public class MainActivity extends Activity {
         if(animate)Motion.arrive(page,true);
         if(onboarding!=null)onboarding.afterRender();
     }
-    /** Fixed navigation dock: every icon and label shares the same centered tab column. */
+    /** The bottom dock is native, accessible and optimized for one-handed navigation. */
     void bottom(){
-        LinearLayout bar=Ui.row(this);
-        bar.setGravity(Gravity.CENTER_VERTICAL);
-        bar.setBackground(Ui.round(this,0xFF121517,18,0xFF3C392B));
-        bar.setPadding(Ui.dp(this,6),Ui.dp(this,6),Ui.dp(this,6),Ui.dp(this,6));
+        LinearLayout outer=Ui.row(this);
+        outer.setGravity(Gravity.CENTER_VERTICAL);
+        outer.setPadding(Ui.dp(this,5),Ui.dp(this,5),Ui.dp(this,5),Ui.dp(this,5));
+        outer.setBackground(Ui.round(this,0xFF0E0E10,21,Ui.BORDER));
         String[] routes={"home","groups","league","profile"};
         String[] labels={"Início","Peladas","Ligas","Perfil"};
         String[] icons={"home","users","trophy","profile"};
@@ -116,25 +116,26 @@ public class MainActivity extends Activity {
             boolean active=route.equals(target);
             LinearLayout item=Ui.col(this);
             item.setGravity(Gravity.CENTER);
-            item.setMinimumHeight(Ui.dp(this,62));
-            item.setPadding(Ui.dp(this,2),Ui.dp(this,5),Ui.dp(this,2),Ui.dp(this,4));
-            Ui.Icon icon=new Ui.Icon(this,icons[i],active?Ui.GOLD:Ui.MUTED);
-            LinearLayout.LayoutParams iconParams=Ui.lp(this,24,24);
+            item.setMinimumHeight(Ui.dp(this,63));
+            item.setPadding(Ui.dp(this,1),Ui.dp(this,7),Ui.dp(this,1),Ui.dp(this,6));
+            if(active)item.setBackground(Ui.round(this,Ui.GOLD_TINT,17,Ui.GOLD_STROKE));
+            Ui.Icon glyph=new Ui.Icon(this,icons[i],active?Ui.GOLD:Ui.MUTED);
+            LinearLayout.LayoutParams iconParams=Ui.lp(this,23,23);
             iconParams.gravity=Gravity.CENTER_HORIZONTAL;
-            item.addView(icon,iconParams);
-            Ui.space(item,5);
+            item.addView(glyph,iconParams);
+            Ui.space(item,6);
             TextView label=Ui.t(this,labels[i],11,active?Ui.GOLD:Ui.MUTED,active);
             label.setGravity(Gravity.CENTER);
             label.setSingleLine(true);
             label.setEllipsize(android.text.TextUtils.TruncateAt.END);
             item.addView(label,new LinearLayout.LayoutParams(-1,-2));
             item.setContentDescription(labels[i]+(active?", selecionado":""));
-            Ui.tappable(item,()->tab(target));
-            bar.addView(item,new LinearLayout.LayoutParams(0,Ui.dp(this,66),1));
+            Ui.tappable(item,()->{if(!route.equals(target))tab(target);});
+            outer.addView(item,new LinearLayout.LayoutParams(0,Ui.dp(this,64),1));
         }
-        LinearLayout.LayoutParams dockParams=Ui.lp(this,-1,-2);
-        dockParams.setMargins(Ui.dp(this,10),0,Ui.dp(this,10),Ui.dp(this,8));
-        shell.addView(bar,dockParams);
+        LinearLayout.LayoutParams p=Ui.lp(this,-1,-2);
+        p.setMargins(Ui.dp(this,14),0,Ui.dp(this,14),Ui.dp(this,10));
+        shell.addView(outer,p);
     }
     DemoDb.Player me(){for(DemoDb.Player p:db.players())if(p.id==playerId)return p;return db.players().get(0);}
     boolean canManage(){return role.equals("Organizador")||role.equals("Administrador");}
@@ -144,11 +145,11 @@ public class MainActivity extends Activity {
     void toast(String text){Toast.makeText(this,text,Toast.LENGTH_SHORT).show();}
     void confirm(String title,String message,Runnable yes){new AlertDialog.Builder(this).setTitle(title).setMessage(message).setNegativeButton("Cancelar",null).setPositiveButton("Confirmar",(d,w)->yes.run()).show();}
     void safely(Runnable r){try{r.run();}catch(IllegalArgumentException|IllegalStateException e){toast(e.getMessage()==null?"Não foi possível concluir. Confira os dados.":e.getMessage());}}
-    void info(){new AlertDialog.Builder(this).setTitle("Pelada League · 0.4")
-        .setMessage("Versão local em desenvolvimento. Os dados ficam neste aparelho.\\n\\n"
-            +"Ainda não existem contas autenticadas, sincronização entre celulares ou aprovação oficial. "
-            +"Os códigos de 4 dígitos testam apenas o fluxo local.\\n\\n"
-            +"Modo atual: "+role+". Nenhuma compra ou assinatura é necessária.")
+    void info(){new AlertDialog.Builder(this).setTitle("Pelada League · 0.7")
+        .setMessage("Visual AMOLED + âmbar. As peladas e súmulas de demonstração ficam neste aparelho.\\n\\n"
+            +"Cadastro, convites e placar entre celulares exigem configurar o Supabase gratuito. "
+            +"Os PINs locais ainda não representam aprovação oficial por duas contas.\\n\\n"
+            +"Modo local atual: "+role+". Sem compra ou assinatura obrigatória.")
         .setPositiveButton("Entendi",null)
         .setNeutralButton("Ver tutorial",(d,w)->{tab("home");onboarding.start();})
         .setNegativeButton("Perfil de teste",(d,w)->chooseRole()).show();}
